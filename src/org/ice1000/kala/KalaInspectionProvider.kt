@@ -30,7 +30,7 @@ class MudaInspection : KalaInspection() {
       "kala.collection.immutable.ImmutableArray" to "toImmutableArray",
       "kala.collection.immutable.ImmutableVector" to "toImmutableVector",
       "kala.collection.immutable.ImmutableLinkedSeq" to "toImmutableLinkedSeq",
-      "kala.collection.immutable.ImmutableSizedLinkedSeq" to "ImmutableSizedLinkedSeq",
+      "kala.collection.immutable.ImmutableSizedLinkedSeq" to "toImmutableSizedLinkedSeq",
     )
 
     fun removeMethodCall(it: PsiMethodCallExpression, method: String): ProblemDescriptor {
