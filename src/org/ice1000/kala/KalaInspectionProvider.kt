@@ -50,11 +50,12 @@ class PreferEmptyInspection : KalaInspection() {
         })
     }
 
-    override fun visitMethodCallExpression(expression: PsiMethodCallExpression?) {
+    override fun visitMethodCallExpression(expression: PsiMethodCallExpression) {
       super.visitMethodCallExpression(expression)
-      val methodExpression = expression?.methodExpression ?: return
-      val resolvedMethod = methodExpression.referenceName ?: return
-      val type = methodExpression.qualifier?.reference?.canonicalText ?: return
+      if (expression.argumentList.expressionCount > 0) return
+      val m = expression.methodExpression
+      val resolvedMethod = m.referenceName ?: return
+      val type = m.qualifier?.reference?.canonicalText ?: return
       classes.forEach { (clz, method) ->
         if (clz == type && resolvedMethod == "of") {
           holder.registerProblem(replaceMethodCall(expression, method))
