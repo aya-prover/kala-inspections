@@ -52,7 +52,7 @@ class PreferEmptyInspection : KalaInspection() {
 
     override fun visitMethodCallExpression(expression: PsiMethodCallExpression) {
       super.visitMethodCallExpression(expression)
-      if (expression.argumentList.expressionCount > 0) return
+      if (!expression.argumentList.isEmpty) return
       val m = expression.methodExpression
       val resolvedMethod = m.referenceName ?: return
       val type = m.qualifier?.reference?.canonicalText ?: return
