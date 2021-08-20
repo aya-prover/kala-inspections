@@ -6,5 +6,6 @@
 This is created for [Kala collections](https://github.com/Glavo/kala-common).
 
 ![a](https://user-images.githubusercontent.com/16398479/130280242-d9dc6909-df1b-4405-b9b0-a14fc6e3e389.gif)
+![a](https://user-images.githubusercontent.com/16398479/130285216-e50415c3-8593-4088-a3bd-ca6255516fec.gif)
 
 [jb]: https://plugins.jetbrains.com/plugin/17453
