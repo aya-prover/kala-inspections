@@ -27,8 +27,11 @@ class PreferEmptyInspection : KalaInspection() {
   override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean) = object : JavaElementVisitor() {
     private val classes = listOf(
       "kala.collection.mutable.Buffer" to "create",
+      "kala.collection.mutable.MutableMap" to "create",
       "kala.collection.immutable.ImmutableSeq" to "empty",
-      "kala.collection.Seq" to "empty",
+      "kala.collection.immutable.ImmutableArray" to "empty",
+      "kala.collection.immutable.ImmutableVector" to "empty",
+      "kala.collection.immutable.ImmutableMap" to "empty",
     )
 
     fun replaceMethodCall(it: PsiMethodCallExpression, method: String): ProblemDescriptor {
@@ -51,9 +54,9 @@ class PreferEmptyInspection : KalaInspection() {
       super.visitMethodCallExpression(expression)
       val methodExpression = expression?.methodExpression ?: return
       val resolvedMethod = methodExpression.referenceName ?: return
-      val type = methodExpression.qualifierExpression?.type ?: return
+      val type = methodExpression.qualifier?.reference?.canonicalText ?: return
       classes.forEach { (clz, method) ->
-        if (clz == type.canonicalText && resolvedMethod == "of") {
+        if (clz == type && resolvedMethod == "of") {
           holder.registerProblem(replaceMethodCall(expression, method))
         }
       }
