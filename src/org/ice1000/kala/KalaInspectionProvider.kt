@@ -32,6 +32,7 @@ class MudaInspection : KalaInspection() {
       "kala.collection.immutable.ImmutableLinkedSeq" to "toImmutableLinkedSeq",
       "kala.collection.immutable.ImmutableSizedLinkedSeq" to "toImmutableSizedLinkedSeq",
       "kala.collection.SeqView" to "view",
+      "kala.collection.MapView" to "view",
       "kala.collection.SetView" to "view",
       "kala.collection.View" to "view",
     )
