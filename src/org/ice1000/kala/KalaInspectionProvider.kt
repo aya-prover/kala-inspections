@@ -13,23 +13,32 @@ class KalaInspectionProvider : InspectionToolProvider {
   )
 }
 
-class MudaInspection : LocalInspectionTool() {
+const val GROUP_DISPLAY = "Kala collections"
+
+abstract class KalaInspection : LocalInspectionTool() {
   override fun isEnabledByDefault() = true
-  override fun getDisplayName() = "Kala collections simplification"
-  override fun getGroupDisplayName() = "Kala collections"
+  override fun getGroupDisplayName() = GROUP_DISPLAY
+}
+
+class MudaInspection : KalaInspection() {
+  override fun getDisplayName() = "Kala collections to* methods simplification"
   override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean) = object : JavaElementVisitor() {
     private val manager = holder.manager
     private val methods = listOf(
       "kala.collection.immutable.ImmutableSeq" to "toImmutableSeq",
       "kala.collection.Seq" to "toSeq",
       "kala.collection.immutable.ImmutableArray" to "toImmutableArray",
+      "kala.collection.immutable.ImmutableVector" to "toImmutableVector",
+      "kala.collection.immutable.ImmutableLinkedSeq" to "toImmutableLinkedSeq",
+      "kala.collection.immutable.ImmutableSizedLinkedSeq" to "ImmutableSizedLinkedSeq",
     )
 
-    fun removeMethodCall(it: PsiMethodCallExpression): ProblemDescriptor {
+    fun removeMethodCall(it: PsiMethodCallExpression, method: String): ProblemDescriptor {
       val methodName = it.methodExpression.referenceNameElement!!
       val range = methodName.textRangeInParent
       return manager.createProblemDescriptor(it, range,
-        "Method call does nothing", ProblemHighlightType.LIKE_UNUSED_SYMBOL, isOnTheFly,
+        CommonQuickFixBundle.message("fix.remove.redundant", method),
+        ProblemHighlightType.LIKE_UNUSED_SYMBOL, isOnTheFly,
         object : LocalQuickFix {
           override fun getFamilyName() = CommonQuickFixBundle.message("fix.simplify")
           override fun applyFix(project: Project, pd: ProblemDescriptor) {
@@ -45,7 +54,7 @@ class MudaInspection : LocalInspectionTool() {
       val type = expression.methodExpression.qualifierExpression?.type ?: return
       methods.forEach { (clz, method) ->
         if (resolvedMethod.name == method && InheritanceUtil.isInheritor(type, clz)) {
-          holder.registerProblem(removeMethodCall(expression))
+          holder.registerProblem(removeMethodCall(expression, method))
         }
       }
     }
