@@ -21,7 +21,7 @@ abstract class KalaInspection : LocalInspectionTool() {
 }
 
 class MudaInspection : KalaInspection() {
-  override fun getDisplayName() = "Kala collections to* methods simplification"
+  override fun getDisplayName() = "Unneeded methods simplification"
   override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean) = object : JavaElementVisitor() {
     private val manager = holder.manager
     private val methods = listOf(
@@ -31,6 +31,9 @@ class MudaInspection : KalaInspection() {
       "kala.collection.immutable.ImmutableVector" to "toImmutableVector",
       "kala.collection.immutable.ImmutableLinkedSeq" to "toImmutableLinkedSeq",
       "kala.collection.immutable.ImmutableSizedLinkedSeq" to "toImmutableSizedLinkedSeq",
+      "kala.collection.SeqView" to "view",
+      "kala.collection.SetView" to "view",
+      "kala.collection.View" to "view",
     )
 
     fun removeMethodCall(it: PsiMethodCallExpression, method: String): ProblemDescriptor {
