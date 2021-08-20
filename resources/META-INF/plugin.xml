@@ -1,0 +1,22 @@
+<idea-plugin>
+  <id>org.ice1000.kala</id>
+  <name>Kala Collections</name>
+  <version>114.514</version>
+  <vendor email="ice1000kotlin@foxmail.com" url="https://ice1000.org">Tesla Zhang</vendor>
+
+  <description><![CDATA[
+    This is the plugin for the 'Kala' collections library for Java.
+    ]]></description>
+
+  <idea-version since-build="203.0"/>
+
+  <depends>com.intellij.modules.platform</depends>
+  <depends>com.intellij.modules.java</depends>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <inspectionToolProvider implementation="org.ice1000.kala.KalaInspectionProvider"/>
+  </extensions>
+
+  <actions>
+  </actions>
+</idea-plugin>
