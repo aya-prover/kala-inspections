@@ -16,7 +16,7 @@ class MudaInspection : KalaInspection() {
     }
   }
 
-  override fun getDisplayName() = "Unneeded methods simplification"
+  override fun getDisplayName() = KalaBundle.message("kala.muda.name")
   override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean) = object : JavaElementVisitor() {
     private val methods = listOf(
       "kala.collection.immutable.ImmutableSeq" to "toImmutableSeq",

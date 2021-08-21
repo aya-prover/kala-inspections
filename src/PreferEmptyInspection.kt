@@ -8,7 +8,7 @@ import com.intellij.psi.impl.JavaPsiFacadeEx
 import com.siyeh.ig.psiutils.CommentTracker
 
 class PreferEmptyInspection : KalaInspection() {
-  override fun getDisplayName() = "Prefer meaningful names over ''of()''"
+  override fun getDisplayName() = KalaBundle.message("kala.prefer-empty.name")
   override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean) = object : JavaElementVisitor() {
     private val classes = listOf(
       "kala.collection.mutable.Buffer" to "create",
