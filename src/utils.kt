@@ -11,6 +11,7 @@ class KalaInspectionProvider : InspectionToolProvider {
   override fun getInspectionClasses(): Array<Class<out LocalInspectionTool>> = arrayOf(
     MudaInspection::class.java,
     PreferEmptyInspection::class.java,
+    FuseImmSeqInspection::class.java,
   )
 }
 
