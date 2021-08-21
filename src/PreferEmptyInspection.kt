@@ -11,12 +11,12 @@ class PreferEmptyInspection : KalaInspection() {
   override fun getDisplayName() = KalaBundle.message("kala.prefer-empty.name")
   override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean) = object : JavaElementVisitor() {
     private val classes = listOf(
-      "kala.collection.mutable.Buffer" to "create",
-      "kala.collection.mutable.MutableMap" to "create",
-      "kala.collection.immutable.ImmutableSeq" to "empty",
-      "kala.collection.immutable.ImmutableArray" to "empty",
-      "kala.collection.immutable.ImmutableVector" to "empty",
-      "kala.collection.immutable.ImmutableMap" to "empty",
+      "$MU_PKG.Buffer" to "create",
+      "$MU_PKG.MutableMap" to "create",
+      IMMUTABLE_SEQ to "empty",
+      "$INM_PKG.ImmutableArray" to "empty",
+      "$INM_PKG.ImmutableVector" to "empty",
+      "$INM_PKG.ImmutableMap" to "empty",
     )
 
     fun replaceMethodCall(it: PsiMethodCallExpression, method: String): ProblemDescriptor {

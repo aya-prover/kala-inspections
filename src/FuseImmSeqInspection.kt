@@ -8,6 +8,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.JavaElementVisitor
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiMethodCallExpression
+import com.intellij.psi.PsiReferenceExpression
 import com.intellij.refactoring.suggested.endOffset
 
 class FuseImmSeqInspection : KalaInspection() {
@@ -19,10 +20,13 @@ class FuseImmSeqInspection : KalaInspection() {
     // ^ https://github.com/Glavo/kala-common/issues/40
   )
 
-  override fun getDisplayName() = KalaBundle.message("kala.fuse-immseq.name")
+  override fun getDisplayName() = KalaBundle.message("kala.fuse-immseq.name", "consecutive")
   override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean) = object : JavaElementVisitor() {
     override fun visitMethodCallExpression(expression: PsiMethodCallExpression) {
-      if (expression.type?.canonicalText?.startsWith("kala.collection.immutable.ImmutableSeq") != true)
+      if (expression.type?.canonicalText?.startsWith(IMMUTABLE_SEQ) != true)
+        return super.visitMethodCallExpression(expression)
+      val parent = expression.parent
+      if (parent is PsiReferenceExpression && parent.referenceName in methods)
         return super.visitMethodCallExpression(expression)
       var expr = expression.methodExpression
       val outerMost = expr.referenceNameElement
@@ -37,7 +41,7 @@ class FuseImmSeqInspection : KalaInspection() {
       }
       if (count < 2) return super.visitMethodCallExpression(expression)
       val innerMost = expr.parent
-      val message = KalaBundle.message("kala.fuse-immseq.name")
+      val message = KalaBundle.message("kala.fuse-immseq.name", count)
       holder.registerProblem(holder.manager.createProblemDescriptor(
         expression, outerMost.textRangeInParent, message,
         ProblemHighlightType.WARNING, isOnTheFly, object : LocalQuickFix {

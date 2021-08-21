@@ -19,16 +19,16 @@ class MudaInspection : KalaInspection() {
   override fun getDisplayName() = KalaBundle.message("kala.muda.name")
   override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean) = object : JavaElementVisitor() {
     private val methods = listOf(
-      "kala.collection.immutable.ImmutableSeq" to "toImmutableSeq",
-      "kala.collection.Seq" to "toSeq",
-      "kala.collection.immutable.ImmutableArray" to "toImmutableArray",
-      "kala.collection.immutable.ImmutableVector" to "toImmutableVector",
-      "kala.collection.immutable.ImmutableLinkedSeq" to "toImmutableLinkedSeq",
-      "kala.collection.immutable.ImmutableSizedLinkedSeq" to "toImmutableSizedLinkedSeq",
-      "kala.collection.SeqView" to "view",
-      "kala.collection.MapView" to "view",
-      "kala.collection.SetView" to "view",
-      "kala.collection.View" to "view",
+      IMMUTABLE_SEQ to "toImmutableSeq",
+      "$INM_PKG.ImmutableArray" to "toImmutableArray",
+      "$INM_PKG.ImmutableVector" to "toImmutableVector",
+      "$INM_PKG.ImmutableLinkedSeq" to "toImmutableLinkedSeq",
+      "$INM_PKG.ImmutableSizedLinkedSeq" to "toImmutableSizedLinkedSeq",
+      "$PKG.Seq" to "toSeq",
+      "$PKG.SeqView" to "view",
+      "$PKG.MapView" to "view",
+      "$PKG.SetView" to "view",
+      "$PKG.View" to "view",
     )
 
     fun removeMethodCall(it: PsiMethodCallExpression, method: String): ProblemDescriptor {

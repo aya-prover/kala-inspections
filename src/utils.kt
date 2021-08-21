@@ -15,6 +15,11 @@ class KalaInspectionProvider : InspectionToolProvider {
   )
 }
 
+const val PKG = "kala.collection"
+const val INM_PKG = "$PKG.immutable"
+const val MU_PKG = "$PKG.mutable"
+const val IMMUTABLE_SEQ = "$INM_PKG.ImmutableSeq"
+
 abstract class KalaInspection : LocalInspectionTool() {
   override fun isEnabledByDefault() = true
   final override fun getGroupDisplayName() = KalaBundle.message("kala.group.name")
