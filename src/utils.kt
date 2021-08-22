@@ -35,7 +35,7 @@ object KalaBundle {
     AbstractBundle.message(bundle, key, *params)
 }
 
-inline fun methodCallVisitor(crossinline f: JavaElementVisitor.(PsiMethodCallExpression) -> Unit) =
+inline fun methodCallVisitor(crossinline f: (PsiMethodCallExpression) -> Unit) =
   object : JavaElementVisitor() {
     override fun visitMethodCallExpression(expression: PsiMethodCallExpression) = f(expression)
   }

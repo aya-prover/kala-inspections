@@ -33,14 +33,12 @@ class MudaInspection : KalaInspection() {
     val methodExpression = it.methodExpression
     val resolvedMethod = methodExpression.referenceName ?: return@methodCallVisitor
     val type = methodExpression.qualifierExpression?.type ?: return@methodCallVisitor
-    methods.forEach { (clz, method) ->
-      if (resolvedMethod == method && InheritanceUtil.isInheritor(type, clz)) {
-        val methodName = methodExpression.referenceNameElement!!
-        val range = methodName.textRangeInParent
-        holder.registerProblem(holder.manager.createProblemDescriptor(it, range,
-          CommonQuickFixBundle.message("fix.remove.redundant", method),
-          ProblemHighlightType.LIKE_UNUSED_SYMBOL, isOnTheFly, FIX))
-      }
+    if (methods.any { (clz, method) -> resolvedMethod == method && InheritanceUtil.isInheritor(type, clz) }) {
+      val methodName = methodExpression.referenceNameElement!!
+      val range = methodName.textRangeInParent
+      holder.registerProblem(holder.manager.createProblemDescriptor(it, range,
+        CommonQuickFixBundle.message("fix.remove.redundant", resolvedMethod),
+        ProblemHighlightType.LIKE_UNUSED_SYMBOL, isOnTheFly, FIX))
     }
   }
 }
