@@ -3,6 +3,8 @@ package org.ice1000.kala
 import com.intellij.AbstractBundle
 import com.intellij.codeInspection.InspectionToolProvider
 import com.intellij.codeInspection.LocalInspectionTool
+import com.intellij.psi.JavaElementVisitor
+import com.intellij.psi.PsiMethodCallExpression
 import org.jetbrains.annotations.NonNls
 import org.jetbrains.annotations.PropertyKey
 import java.util.*
@@ -32,3 +34,8 @@ object KalaBundle {
   fun message(@PropertyKey(resourceBundle = BUNDLE) key: String, vararg params: Any) =
     AbstractBundle.message(bundle, key, *params)
 }
+
+inline fun methodCallVisitor(crossinline f: JavaElementVisitor.(PsiMethodCallExpression) -> Unit) =
+  object : JavaElementVisitor() {
+    override fun visitMethodCallExpression(expression: PsiMethodCallExpression) = f(expression)
+  }
