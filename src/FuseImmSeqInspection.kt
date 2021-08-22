@@ -5,10 +5,7 @@ import com.intellij.codeInspection.ProblemDescriptor
 import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.openapi.project.Project
-import com.intellij.psi.JavaElementVisitor
-import com.intellij.psi.PsiDocumentManager
-import com.intellij.psi.PsiMethodCallExpression
-import com.intellij.psi.PsiReferenceExpression
+import com.intellij.psi.*
 import com.intellij.refactoring.suggested.endOffset
 
 class FuseImmSeqInspection : KalaInspection() {
@@ -32,15 +29,14 @@ class FuseImmSeqInspection : KalaInspection() {
       val outerMost = expr.referenceNameElement
         ?: return super.visitMethodCallExpression(expression)
       var count = 0
+      var qualifier = parent
       while (true) {
-        val methodExpr = expr
-        if (methodExpr.referenceName !in methods) break
+        if (expr.referenceName !in methods) break
         count++
-        val qualifier = methodExpr.qualifier as? PsiMethodCallExpression ?: break
-        expr = qualifier.methodExpression
+        qualifier = expr.qualifier
+        expr = (qualifier as? PsiMethodCallExpression ?: break).methodExpression
       }
       if (count < 2) return super.visitMethodCallExpression(expression)
-      val innerMost = expr.parent
       val message = KalaBundle.message("kala.fuse-immseq.name", count)
       holder.registerProblem(holder.manager.createProblemDescriptor(
         expression, outerMost.textRangeInParent, message,
@@ -52,7 +48,7 @@ class FuseImmSeqInspection : KalaInspection() {
           val dom = manager.getDocument(expression.containingFile) ?: return
           manager.commitDocument(dom)
           dom.insertString(expression.endOffset, ".toImmutableSeq()")
-          dom.insertString(innerMost.endOffset, ".view()")
+          dom.insertString(qualifier.endOffset, ".view()")
           manager.commitDocument(dom)
         }
       }))
