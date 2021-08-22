@@ -4,14 +4,13 @@ import com.intellij.codeInspection.*
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiMethodCallExpression
 import com.intellij.psi.util.InheritanceUtil
-import com.siyeh.ig.psiutils.CommentTracker
 
 class MudaInspection : KalaInspection() {
   private object FIX : LocalQuickFix {
     override fun getFamilyName() = CommonQuickFixBundle.message("fix.simplify")
     override fun applyFix(project: Project, pd: ProblemDescriptor) {
       val element = pd.psiElement as? PsiMethodCallExpression ?: return
-      CommentTracker().replaceAndRestoreComments(element, element.methodExpression.qualifier!!)
+      element.methodExpression.qualifier?.let(element::replace)
     }
   }
 
