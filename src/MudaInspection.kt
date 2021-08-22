@@ -21,7 +21,7 @@ class MudaInspection : KalaInspection() {
     "$PKG.MapView" to "view",
     "$PKG.SetView" to "view",
     "$PKG.View" to "view",
-  ) + INM_CLASSES_AND_FACTORIES
+  ) + INM_CLZ_FACTORIES
 
   override fun getDisplayName() = KalaBundle.message("kala.muda.name")
   override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean) = methodCallVisitor {

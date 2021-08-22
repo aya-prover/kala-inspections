@@ -14,6 +14,7 @@ class KalaInspectionProvider : InspectionToolProvider {
     MudaInspection::class.java,
     PreferEmptyInspection::class.java,
     FuseImmSeqInspection::class.java,
+    NeedlessCollectInspection::class.java,
   )
 }
 
@@ -40,7 +41,7 @@ inline fun methodCallVisitor(crossinline f: (PsiMethodCallExpression) -> Unit) =
     override fun visitMethodCallExpression(expression: PsiMethodCallExpression) = f(expression)
   }
 
-val INM_CLASSES_AND_FACTORIES = listOf(
+val INM_CLZ_FACTORIES = listOf(
   IMMUTABLE_SEQ to "toImmutableSeq",
   "$INM_PKG.ImmutableArray" to "toImmutableArray",
   "$INM_PKG.ImmutableVector" to "toImmutableVector",

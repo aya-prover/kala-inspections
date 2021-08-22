@@ -2,9 +2,7 @@ package org.ice1000.kala
 
 import com.intellij.codeInspection.*
 import com.intellij.openapi.project.Project
-import com.intellij.psi.PsiMethodCallExpression
-import com.intellij.psi.impl.JavaPsiFacadeEx
-import com.siyeh.ig.psiutils.CommentTracker
+import com.intellij.psi.JavaPsiFacade
 
 class PreferEmptyInspection : KalaInspection() {
   private val classes = listOf(
@@ -23,7 +21,7 @@ class PreferEmptyInspection : KalaInspection() {
     if (m.referenceName != "of") return@methodCallVisitor
     val type = m.qualifier?.reference?.canonicalText ?: return@methodCallVisitor
     val (_, method) = classes.firstOrNull { (clz, _) -> clz == type } ?: return@methodCallVisitor
-    val methodName = it.methodExpression.referenceNameElement!!
+    val methodName = m.referenceNameElement ?: return@methodCallVisitor
     val range = methodName.textRangeInParent
     val message = CommonQuickFixBundle.message("fix.replace.x.with.y", "of", method)
     holder.registerProblem(holder.manager.createProblemDescriptor(it, range, message,
@@ -31,9 +29,8 @@ class PreferEmptyInspection : KalaInspection() {
       object : LocalQuickFix {
         override fun getFamilyName() = message
         override fun applyFix(project: Project, pd: ProblemDescriptor) {
-          val element = pd.psiElement as? PsiMethodCallExpression ?: return
-          val newId = JavaPsiFacadeEx.getElementFactory(project).createIdentifier(method)
-          CommentTracker().replaceAndRestoreComments(element.methodExpression.referenceNameElement!!, newId)
+          if (pd.psiElement != it || !it.isValid) return
+          methodName.replace(JavaPsiFacade.getElementFactory(project).createIdentifier(method))
         }
       })
     )
