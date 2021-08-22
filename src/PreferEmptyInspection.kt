@@ -22,21 +22,20 @@ class PreferEmptyInspection : KalaInspection() {
     val m = it.methodExpression
     if (m.referenceName != "of") return@methodCallVisitor
     val type = m.qualifier?.reference?.canonicalText ?: return@methodCallVisitor
-    classes.filter { (clz, _) -> clz == type }.forEach { (_, method) ->
-      val methodName = it.methodExpression.referenceNameElement!!
-      val range = methodName.textRangeInParent
-      val message = CommonQuickFixBundle.message("fix.replace.x.with.y", "of", method)
-      holder.registerProblem(holder.manager.createProblemDescriptor(it, range, message,
-        ProblemHighlightType.LIKE_DEPRECATED, isOnTheFly,
-        object : LocalQuickFix {
-          override fun getFamilyName() = message
-          override fun applyFix(project: Project, pd: ProblemDescriptor) {
-            val element = pd.psiElement as? PsiMethodCallExpression ?: return
-            val newId = JavaPsiFacadeEx.getElementFactory(project).createIdentifier(method)
-            CommentTracker().replaceAndRestoreComments(element.methodExpression.referenceNameElement!!, newId)
-          }
-        })
-      )
-    }
+    val (_, method) = classes.firstOrNull { (clz, _) -> clz == type } ?: return@methodCallVisitor
+    val methodName = it.methodExpression.referenceNameElement!!
+    val range = methodName.textRangeInParent
+    val message = CommonQuickFixBundle.message("fix.replace.x.with.y", "of", method)
+    holder.registerProblem(holder.manager.createProblemDescriptor(it, range, message,
+      ProblemHighlightType.LIKE_DEPRECATED, isOnTheFly,
+      object : LocalQuickFix {
+        override fun getFamilyName() = message
+        override fun applyFix(project: Project, pd: ProblemDescriptor) {
+          val element = pd.psiElement as? PsiMethodCallExpression ?: return
+          val newId = JavaPsiFacadeEx.getElementFactory(project).createIdentifier(method)
+          CommentTracker().replaceAndRestoreComments(element.methodExpression.referenceNameElement!!, newId)
+        }
+      })
+    )
   }
 }

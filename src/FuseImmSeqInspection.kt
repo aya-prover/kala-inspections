@@ -14,9 +14,9 @@ class FuseImmSeqInspection : KalaInspection() {
   private val methods = listOf(
     "take", "drop", "takeLast", "dropLast", "updated",
     "prepended", "prependedAll", "appended", "appendedAll",
-    "mapIndexed", "map",
-    // "mapChecked", "mapIndexedChecked",
-    // ^ https://github.com/Glavo/kala-common/issues/40
+    "mapIndexed", "map", "mapNotNull", "mapIndexedNotNull",
+    "filterIsInstance", "filter", "filterNotNull", "filterNot",
+    "flatMap",
   )
 
   override fun getDisplayName() = KalaBundle.message("kala.fuse-immseq.name", "consecutive")

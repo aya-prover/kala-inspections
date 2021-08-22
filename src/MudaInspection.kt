@@ -16,17 +16,12 @@ class MudaInspection : KalaInspection() {
   }
 
   private val methods = listOf(
-    IMMUTABLE_SEQ to "toImmutableSeq",
-    "$INM_PKG.ImmutableArray" to "toImmutableArray",
-    "$INM_PKG.ImmutableVector" to "toImmutableVector",
-    "$INM_PKG.ImmutableLinkedSeq" to "toImmutableLinkedSeq",
-    "$INM_PKG.ImmutableSizedLinkedSeq" to "toImmutableSizedLinkedSeq",
     "$PKG.Seq" to "toSeq",
     "$PKG.SeqView" to "view",
     "$PKG.MapView" to "view",
     "$PKG.SetView" to "view",
     "$PKG.View" to "view",
-  )
+  ) + INM_CLASSES_AND_FACTORIES
 
   override fun getDisplayName() = KalaBundle.message("kala.muda.name")
   override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean) = methodCallVisitor {

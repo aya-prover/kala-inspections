@@ -39,3 +39,11 @@ inline fun methodCallVisitor(crossinline f: (PsiMethodCallExpression) -> Unit) =
   object : JavaElementVisitor() {
     override fun visitMethodCallExpression(expression: PsiMethodCallExpression) = f(expression)
   }
+
+val INM_CLASSES_AND_FACTORIES = listOf(
+  IMMUTABLE_SEQ to "toImmutableSeq",
+  "$INM_PKG.ImmutableArray" to "toImmutableArray",
+  "$INM_PKG.ImmutableVector" to "toImmutableVector",
+  "$INM_PKG.ImmutableLinkedSeq" to "toImmutableLinkedSeq",
+  "$INM_PKG.ImmutableSizedLinkedSeq" to "toImmutableSizedLinkedList",
+)
