@@ -15,7 +15,6 @@ class MudaInspection : KalaInspection() {
   }
 
   private val methods = listOf(
-    "$PKG.Seq" to "toSeq",
     "$PKG.SeqView" to "view",
     "$PKG.MapView" to "view",
     "$PKG.SetView" to "view",

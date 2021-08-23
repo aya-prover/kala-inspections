@@ -42,6 +42,7 @@ inline fun methodCallVisitor(crossinline f: (PsiMethodCallExpression) -> Unit) =
   }
 
 val INM_CLZ_FACTORIES = listOf(
+  "$PKG.Seq" to "toSeq",
   IMMUTABLE_SEQ to "toImmutableSeq",
   "$INM_PKG.ImmutableArray" to "toImmutableArray",
   "$INM_PKG.ImmutableVector" to "toImmutableVector",
