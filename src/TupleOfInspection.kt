@@ -11,9 +11,10 @@ class TupleOfInspection : KalaInspection() {
     override fun getFamilyName() = CommonQuickFixBundle.message("fix.replace.with.x", "Tuple.of")
     override fun applyFix(project: Project, pd: ProblemDescriptor) {
       val it = pd.psiElement as? PsiNewExpression ?: return
+      val tyArgs = it.classReference?.parameterList?.text ?: return
       val args = it.argumentList ?: return
       it.replace(JavaPsiFacade.getElementFactory(project)
-        .createExpressionFromText("Tuple.${it.typeArgumentList.text}of${args.text}", it))
+        .createExpressionFromText("Tuple.${tyArgs.takeIf { it != "<>" }.orEmpty()}of${args.text}", it))
     }
   }
 
