@@ -1,16 +1,19 @@
 <idea-plugin>
   <id>org.ice1000.kala</id>
   <name>Kala Collections</name>
-  <version>0.2</version>
+  <version>0.3</version>
   <vendor email="ice1000kotlin@foxmail.com" url="https://ice1000.org">Tesla Zhang</vendor>
 
   <description><![CDATA[
-    This is the plugin for the 'Kala' collections library for Java.<br/>
+    This plugin provides inspections for the 'Kala' collections library for Java.<br/>
     Once you import the (recent version of) Kala-common library,
-    this plugin will give you useful suggestions.<br/><br/>
-    <img src="https://user-images.githubusercontent.com/16398479/130280242-d9dc6909-df1b-4405-b9b0-a14fc6e3e389.gif"></img><br/>
-    <img src="https://user-images.githubusercontent.com/16398479/130285216-e50415c3-8593-4088-a3bd-ca6255516fec.gif"></img>
+    this plugin will give you useful suggestions, such as method replacements,
+    equivalent-but-efficient conversion, etc.
     ]]></description>
+
+  <change-notes><![CDATA[
+    Implemented a new inspection for ''Tuple.of''.
+    ]]></change-notes>
 
   <idea-version since-build="203.0"/>
 
