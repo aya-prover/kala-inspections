@@ -5,6 +5,7 @@ import com.intellij.codeInspection.InspectionToolProvider
 import com.intellij.codeInspection.LocalInspectionTool
 import com.intellij.psi.JavaElementVisitor
 import com.intellij.psi.PsiMethodCallExpression
+import com.intellij.psi.PsiNewExpression
 import org.jetbrains.annotations.NonNls
 import org.jetbrains.annotations.PropertyKey
 import java.util.*
@@ -15,6 +16,7 @@ class KalaInspectionProvider : InspectionToolProvider {
     PreferEmptyInspection::class.java,
     FuseImmSeqInspection::class.java,
     NeedlessCollectInspection::class.java,
+    TupleOfInspection::class.java,
   )
 }
 
@@ -22,6 +24,7 @@ const val PKG = "kala.collection"
 const val INM_PKG = "$PKG.immutable"
 const val MU_PKG = "$PKG.mutable"
 const val IMMUTABLE_SEQ = "$INM_PKG.ImmutableSeq"
+const val TU_PKG = "kala.tuple"
 
 abstract class KalaInspection : LocalInspectionTool() {
   override fun isEnabledByDefault() = true
@@ -39,6 +42,11 @@ object KalaBundle {
 inline fun methodCallVisitor(crossinline f: (PsiMethodCallExpression) -> Unit) =
   object : JavaElementVisitor() {
     override fun visitMethodCallExpression(expression: PsiMethodCallExpression) = f(expression)
+  }
+
+inline fun newVisitor(crossinline f: (PsiNewExpression) -> Unit) =
+  object : JavaElementVisitor() {
+    override fun visitNewExpression(expression: PsiNewExpression) = f(expression)
   }
 
 val INM_CLZ_FACTORIES = listOf(

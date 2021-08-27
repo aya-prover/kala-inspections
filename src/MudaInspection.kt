@@ -6,20 +6,20 @@ import com.intellij.psi.PsiMethodCallExpression
 import com.intellij.psi.util.InheritanceUtil
 
 class MudaInspection : KalaInspection() {
-  private object FIX : LocalQuickFix {
+  private companion object FIX : LocalQuickFix {
     override fun getFamilyName() = CommonQuickFixBundle.message("fix.simplify")
     override fun applyFix(project: Project, pd: ProblemDescriptor) {
       val element = pd.psiElement as? PsiMethodCallExpression ?: return
       element.methodExpression.qualifier?.let(element::replace)
     }
-  }
 
-  private val methods = listOf(
-    "$PKG.SeqView" to "view",
-    "$PKG.MapView" to "view",
-    "$PKG.SetView" to "view",
-    "$PKG.View" to "view",
-  ) + INM_CLZ_FACTORIES
+    private val methods = listOf(
+      "$PKG.SeqView" to "view",
+      "$PKG.MapView" to "view",
+      "$PKG.SetView" to "view",
+      "$PKG.View" to "view",
+    ) + INM_CLZ_FACTORIES
+  }
 
   override fun getDisplayName() = KalaBundle.message("kala.muda.name")
   override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean) = methodCallVisitor {
