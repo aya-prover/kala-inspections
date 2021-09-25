@@ -76,10 +76,10 @@ class SizeCompareInspection : KalaInspection() {
     holder.registerProblem(holder.manager.createProblemDescriptor(parent,
       parent.operationSign.textRangeInParent, displayName, ProblemHighlightType.WARNING, isOnTheFly,
       FIX(qualifierE, when (op) {
-        Comparison.LT -> if (is0(operand)) Const(false) else Compare(operand, Comparison.LT)
-        Comparison.GT -> if (is0(operand)) Const(true) else Compare(operand, Comparison.GT)
-        Comparison.LE -> if (is0(operand)) IsEmpty else Compare(operand, Comparison.LE)
-        Comparison.GE -> if (is0(operand)) IsNotEmpty else Compare(operand, Comparison.GE)
+        Comparison.LT -> if (is0(operand)) IsEmpty else Compare(operand, Comparison.LT)
+        Comparison.GT -> if (is0(operand)) IsNotEmpty else Compare(operand, Comparison.GT)
+        Comparison.LE -> if (is0(operand)) Const(false) else Compare(operand, Comparison.LE)
+        Comparison.GE -> if (is0(operand)) Const(true) else Compare(operand, Comparison.GE)
         Comparison.EQ -> if (is0(operand)) IsEmpty else Compare(operand, Comparison.EQ)
         Comparison.NE -> if (is0(operand)) IsNotEmpty else Compare(operand, Comparison.NE)
       })))
