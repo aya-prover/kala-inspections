@@ -17,6 +17,7 @@ class KalaInspectionProvider : InspectionToolProvider {
     FuseImmSeqInspection::class.java,
     NeedlessCollectInspection::class.java,
     TupleOfInspection::class.java,
+    ViewSizeInspection::class.java,
   )
 }
 
