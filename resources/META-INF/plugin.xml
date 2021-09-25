@@ -1,7 +1,7 @@
 <idea-plugin>
   <id>org.ice1000.kala</id>
   <name>Kala Collections</name>
-  <version>0.3</version>
+  <version>0.4</version>
   <vendor email="ice1000kotlin@foxmail.com" url="https://ice1000.org">Tesla Zhang</vendor>
 
   <description><![CDATA[
@@ -12,7 +12,7 @@
     ]]></description>
 
   <change-notes><![CDATA[
-    Implemented a new inspection for ''Tuple.of''.
+    Implemented two new inspections for size-relevant methods.
     ]]></change-notes>
 
   <idea-version since-build="203.0"/>
