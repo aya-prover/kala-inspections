@@ -32,7 +32,8 @@ class SizeCompareInspection : KalaInspection() {
     JavaTokenType.GE -> Comparison.GE
     JavaTokenType.EQ -> Comparison.EQ
     JavaTokenType.NE -> Comparison.NE
-    /*JavaTokenType.EQEQ*/ else -> Comparison.EQ
+    JavaTokenType.EQEQ -> Comparison.EQ
+    else -> null
   }
 
   private class FIX(qualifier: PsiExpression, type: FixType) : LocalQuickFix {
@@ -70,7 +71,7 @@ class SizeCompareInspection : KalaInspection() {
     if (!InheritanceUtil.isInheritor(type, "$PKG.base.AnyTraversable")) return@methodCallVisitor
     val lOperand = parent.lOperand
     val rOperand = parent.rOperand ?: return@methodCallVisitor
-    val opToken = asComparison(parent.operationTokenType)
+    val opToken = asComparison(parent.operationTokenType) ?: return@methodCallVisitor
     val (operand, op) = if (lOperand === it) rOperand to opToken else lOperand to inv(opToken)
     holder.registerProblem(holder.manager.createProblemDescriptor(parent,
       parent.operationSign.textRangeInParent, displayName, ProblemHighlightType.WARNING, isOnTheFly,
