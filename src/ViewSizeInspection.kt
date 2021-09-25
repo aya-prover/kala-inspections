@@ -9,13 +9,14 @@ class ViewSizeInspection : KalaInspection() {
   override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean) = methodCallVisitor {
     if (!it.argumentList.isEmpty) return@methodCallVisitor
     val m = it.methodExpression
-    if (m.referenceName != "size") return@methodCallVisitor
+    val refName = m.referenceNameElement ?: return@methodCallVisitor
+    if (refName.text != "size") return@methodCallVisitor
     val type = m.qualifierExpression?.type ?: return@methodCallVisitor
     if (InheritanceUtil.isInheritor(type, "$PKG.base.AnyTraversable") &&
       !InheritanceUtil.isInheritor(type, "$PKG.Collection")) {
       // This means it's potentially a 'view'
-      holder.registerProblem(holder.manager.createProblemDescriptor(
-        m, m, displayName, ProblemHighlightType.WARNING, isOnTheFly))
+      holder.registerProblem(holder.manager.createProblemDescriptor(m,
+        refName.textRangeInParent, displayName, ProblemHighlightType.WARNING, isOnTheFly))
     }
   }
 }

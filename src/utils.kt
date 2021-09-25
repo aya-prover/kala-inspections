@@ -18,6 +18,7 @@ class KalaInspectionProvider : InspectionToolProvider {
     NeedlessCollectInspection::class.java,
     TupleOfInspection::class.java,
     ViewSizeInspection::class.java,
+    SizeCompareInspection::class.java,
   )
 }
 
