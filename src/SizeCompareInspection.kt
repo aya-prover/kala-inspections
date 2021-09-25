@@ -1,9 +1,6 @@
 package org.ice1000.kala
 
-import com.intellij.codeInspection.LocalQuickFix
-import com.intellij.codeInspection.ProblemDescriptor
-import com.intellij.codeInspection.ProblemHighlightType
-import com.intellij.codeInspection.ProblemsHolder
+import com.intellij.codeInspection.*
 import com.intellij.openapi.project.Project
 import com.intellij.psi.*
 import com.intellij.psi.tree.IElementType
@@ -38,24 +35,26 @@ class SizeCompareInspection : KalaInspection() {
     /*JavaTokenType.EQEQ*/ else -> Comparison.EQ
   }
 
-  private class FIX(private val qualifier: PsiExpression, private val type: FixType) : LocalQuickFix {
-    override fun getFamilyName() = KalaBundle.message("kala.size-compare.fix")
+  private class FIX(qualifier: PsiExpression, type: FixType) : LocalQuickFix {
+    private val newCode = when (type) {
+      is Compare -> when (type.comparison) {
+        Comparison.LT -> "${qualifier.text}.sizeLessThan(${type.element.text})"
+        Comparison.LE -> "${qualifier.text}.sizeLessThanOrEquals(${type.element.text})"
+        Comparison.GT -> "${qualifier.text}.sizeGreaterThan(${type.element.text})"
+        Comparison.GE -> "${qualifier.text}.sizeGreaterThanOrEquals(${type.element.text})"
+        Comparison.EQ -> "${qualifier.text}.sizeEquals(${type.element.text})"
+        Comparison.NE -> "${qualifier.text}.sizeNotEquals(${type.element.text})"
+      }
+      is Const -> "${type.boolean}"
+      IsEmpty -> "${qualifier.text}.isEmpty()"
+      IsNotEmpty -> "${qualifier.text}.isNotEmpty()"
+    }
+
+    override fun getFamilyName() = CommonQuickFixBundle.message("fix.replace.with.x", newCode)
     override fun applyFix(project: Project, p1: ProblemDescriptor) {
-      if (!qualifier.isValid) return
       val factory = JavaPsiFacade.getElementFactory(project)
-      p1.psiElement.replace(when (type) {
-        is Compare -> when (type.comparison) {
-          Comparison.LT -> factory.createExpressionFromText("${qualifier.text}.sizeLessThan(${type.element.text})", qualifier)
-          Comparison.LE -> factory.createExpressionFromText("${qualifier.text}.sizeLessThanOrEquals(${type.element.text})", qualifier)
-          Comparison.GT -> factory.createExpressionFromText("${qualifier.text}.sizeGreaterThan(${type.element.text})", qualifier)
-          Comparison.GE -> factory.createExpressionFromText("${qualifier.text}.sizeGreaterThanOrEquals(${type.element.text})", qualifier)
-          Comparison.EQ -> factory.createExpressionFromText("${qualifier.text}.sizeEquals(${type.element.text})", qualifier)
-          Comparison.NE -> factory.createExpressionFromText("${qualifier.text}.sizeNotEquals(${type.element.text})", qualifier)
-        }
-        is Const -> factory.createExpressionFromText("${type.boolean}", qualifier)
-        IsEmpty -> factory.createExpressionFromText("${qualifier.text}.isEmpty()", qualifier)
-        IsNotEmpty -> factory.createExpressionFromText("${qualifier.text}.isNotEmpty()", qualifier)
-      })
+      val element = p1.psiElement
+      element.replace(factory.createExpressionFromText(newCode, element))
     }
   }
 
