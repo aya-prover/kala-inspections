@@ -12,7 +12,8 @@
     ]]></description>
 
   <change-notes><![CDATA[
-    Implemented two new inspections for size-relevant methods.
+    Only warn about View's size comparisons as the other cases may not cause performance issues.<br/>
+    Address the renaming from Buffer to MutableList in kala library.<br/>
     ]]></change-notes>
 
   <idea-version since-build="203.0"/>

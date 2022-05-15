@@ -6,7 +6,7 @@ import com.intellij.psi.JavaPsiFacade
 
 class PreferEmptyInspection : KalaInspection() {
   private val classes = listOf(
-    "$MU_PKG.Buffer" to "create",
+    "$MU_PKG.MutableList" to "create",
     "$MU_PKG.MutableMap" to "create",
     IMMUTABLE_SEQ to "empty",
     "$INM_PKG.ImmutableArray" to "empty",

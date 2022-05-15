@@ -68,7 +68,7 @@ class SizeCompareInspection : KalaInspection() {
     val qualifierE = m.qualifierExpression ?: return@methodCallVisitor
     val type = qualifierE.type ?: return@methodCallVisitor
     val parent = it.parent as? PsiBinaryExpression ?: return@methodCallVisitor
-    if (!InheritanceUtil.isInheritor(type, "$PKG.base.AnyTraversable")) return@methodCallVisitor
+    if (!InheritanceUtil.isInheritor(type, "$PKG.View")) return@methodCallVisitor
     val lOperand = parent.lOperand
     val rOperand = parent.rOperand ?: return@methodCallVisitor
     val opToken = asComparison(parent.operationTokenType) ?: return@methodCallVisitor
