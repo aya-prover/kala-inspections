@@ -20,6 +20,7 @@ class TupleOfInspection : KalaInspection() {
 
   override fun getDisplayName() = KalaBundle.message("kala.prefer-factory-valhalla.name")
   override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean) = newVisitor {
+    if (it.isArrayCreation) return@newVisitor
     val cls = it.classReference?.resolve() as? PsiClass ?: return@newVisitor
     val qname = cls.qualifiedName ?: return@newVisitor
     if (qname == "$TU_PKG.TupleXXL") return@newVisitor

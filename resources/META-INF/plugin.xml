@@ -12,8 +12,11 @@
     ]]></description>
 
   <change-notes><![CDATA[
-    Only warn about View's size comparisons as the other cases may not cause performance issues.<br/>
-    Address the renaming from Buffer to MutableList in kala library.<br/>
+    <ul>
+      <li>Only warn about View's size comparisons as the other cases may not cause performance issues.</li>
+      <li>Address the renaming from Buffer to MutableList in kala library.</li>
+      <li>Avoid warning new on array creation of tuples.</li>
+    </ul>
     ]]></change-notes>
 
   <idea-version since-build="203.0"/>
