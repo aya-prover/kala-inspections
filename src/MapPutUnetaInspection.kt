@@ -9,8 +9,7 @@ class MapPutUnetaInspection : KalaInspection() {
   private companion object FIX : LocalQuickFix {
     override fun getFamilyName() = CommonQuickFixBundle.message("fix.simplify")
     override fun applyFix(project: Project, desc: ProblemDescriptor) {
-      val it = desc.psiElement as? PsiMethodCallExpression ?: return
-      val args = it.argumentList
+      val args = desc.psiElement as? PsiExpressionList ?: return
       val (args1, args2) = args.expressions
       if (args1 !is PsiReferenceExpression || args2 !is PsiReferenceExpression) return
       args1.replace(args1.qualifier ?: return)
@@ -39,7 +38,7 @@ class MapPutUnetaInspection : KalaInspection() {
     // TODO: improve
     if (!qua1.textMatches(qua2)) return@methodCallVisitor
     val range = args1.textRangeInParent.union(args2.textRangeInParent)
-    holder.registerProblem(holder.manager.createProblemDescriptor(it, range,
+    holder.registerProblem(holder.manager.createProblemDescriptor(args, range,
       CommonQuickFixBundle.message("fix.simplify"),
       ProblemHighlightType.LIKE_UNUSED_SYMBOL, isOnTheFly, FIX))
   }

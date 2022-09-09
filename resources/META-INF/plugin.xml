@@ -1,7 +1,7 @@
 <idea-plugin>
   <id>org.ice1000.kala</id>
   <name>Kala Collections</name>
-  <version>0.5</version>
+  <version>0.6.1</version>
   <vendor email="ice1000kotlin@foxmail.com" url="https://ice1000.org">Tesla Zhang</vendor>
 
   <description><![CDATA[
@@ -13,9 +13,7 @@
 
   <change-notes><![CDATA[
     <ul>
-      <li>Only warn about View's size comparisons as the other cases may not cause performance issues.</li>
-      <li>Address the renaming from Buffer to MutableList in kala library.</li>
-      <li>Avoid warning new on array creation of tuples.</li>
+      <li>Add an inspection that converts <code>Map.put(t._1, t._2)</code> to <code>Map.put(t)</code></li>
     </ul>
     ]]></change-notes>
 
