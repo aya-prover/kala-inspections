@@ -38,7 +38,7 @@ class MapPutUnetaInspection : KalaInspection() {
     val qua2 = args2.qualifierExpression ?: return@methodCallVisitor
     // TODO: improve
     if (!qua1.textMatches(qua2)) return@methodCallVisitor
-    val range = args.textRangeInParent
+    val range = args1.textRangeInParent.union(args2.textRangeInParent)
     holder.registerProblem(holder.manager.createProblemDescriptor(it, range,
       CommonQuickFixBundle.message("fix.simplify"),
       ProblemHighlightType.LIKE_UNUSED_SYMBOL, isOnTheFly, FIX))
