@@ -15,7 +15,7 @@ class MapPutUnetaInspection : KalaInspection() {
       if (args1 !is PsiReferenceExpression || args2 !is PsiReferenceExpression) return
       args1.replace(args1.qualifier ?: return)
       args2.delete()
-      args.children.first { it is PsiJavaToken && it.tokenType == JavaTokenType.COMMA }.delete()
+      args.children.firstOrNull { it is PsiJavaToken && it.tokenType == JavaTokenType.COMMA }?.delete()
     }
 
     private val clz = "$MU_PKG.MutableMapLike"
@@ -37,7 +37,7 @@ class MapPutUnetaInspection : KalaInspection() {
     val qua1 = args1.qualifierExpression ?: return@methodCallVisitor
     val qua2 = args2.qualifierExpression ?: return@methodCallVisitor
     // TODO: improve
-    if (qua1.text != qua2.text) return@methodCallVisitor
+    if (!qua1.textMatches(qua2)) return@methodCallVisitor
     val range = args.textRangeInParent
     holder.registerProblem(holder.manager.createProblemDescriptor(it, range,
       CommonQuickFixBundle.message("fix.simplify"),
