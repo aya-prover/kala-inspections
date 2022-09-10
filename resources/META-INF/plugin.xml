@@ -1,7 +1,7 @@
 <idea-plugin>
   <id>org.ice1000.kala</id>
   <name>Kala Collections</name>
-  <version>0.6.1</version>
+  <version>0.7</version>
   <vendor email="ice1000kotlin@foxmail.com" url="https://ice1000.org">Tesla Zhang</vendor>
 
   <description><![CDATA[
@@ -13,7 +13,8 @@
 
   <change-notes><![CDATA[
     <ul>
-      <li>Add an inspection that converts <code>Map.put(t._1, t._2)</code> to <code>Map.put(t)</code></li>
+      <li>Improve the inspection that converts <code>Map.put(t._1, t._2)</code> to <code>Map.put(t)</code>
+      by additionally support <code>getKey</code> and <code>component1</code>.</li>
     </ul>
     ]]></change-notes>
 
