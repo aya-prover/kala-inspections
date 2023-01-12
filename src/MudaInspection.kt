@@ -17,6 +17,7 @@ class MudaInspection : KalaInspection() {
       "$PKG.SeqView" to "view",
       "$PKG.MapView" to "view",
       "$PKG.SetView" to "view",
+      "$PKG.CollectionView" to "view",
       "$PKG.View" to "view",
     ) + INM_CLZ_FACTORIES
   }
