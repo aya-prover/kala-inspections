@@ -28,9 +28,8 @@ class MudaInspection : KalaInspection() {
     val resolvedMethod = methodExpression.referenceName ?: return@methodCallVisitor
     val type = methodExpression.qualifierExpression?.type ?: return@methodCallVisitor
     if (methods.any { (clz, method) -> resolvedMethod == method && InheritanceUtil.isInheritor(type, clz) }) {
-      val methodName = methodExpression.referenceNameElement!!
-      val range = methodName.textRangeInParent
-      holder.registerProblem(holder.manager.createProblemDescriptor(it, range,
+      val child = methodExpression.referenceNameElement!!
+      holder.registerProblem(holder.manager.createProblemDescriptor(it, child.textRangeInParent,
         CommonQuickFixBundle.message("fix.remove.redundant", resolvedMethod),
         ProblemHighlightType.LIKE_UNUSED_SYMBOL, isOnTheFly, FIX))
     }

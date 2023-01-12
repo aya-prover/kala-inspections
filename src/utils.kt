@@ -20,6 +20,7 @@ class KalaInspectionProvider : InspectionToolProvider {
     ViewSizeInspection::class.java,
     SizeCompareInspection::class.java,
     MapPutUnetaInspection::class.java,
+    ViewToMapInspection::class.java,
   )
 }
 
