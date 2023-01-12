@@ -24,7 +24,6 @@ class ViewToMapInspection : KalaInspection() {
     if (resolvedMethod != "toImmutableMap") return@methodCallVisitor
     val child = methodExpression.referenceNameElement!!
     holder.registerProblem(holder.manager.createProblemDescriptor(call, child.textRangeInParent,
-      CommonQuickFixBundle.message("fix.use", "from"),
-      ProblemHighlightType.LIKE_DEPRECATED, isOnTheFly, FIX))
+      displayName, ProblemHighlightType.LIKE_DEPRECATED, isOnTheFly, FIX))
   }
 }
