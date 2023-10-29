@@ -1,3 +1,10 @@
+### Ice 1000 ###
+*.jar
+.idea/workspace.xml
+.idea/misc.xml
+.idea/uiDesigner.xml
+.idea/gradle.xml
+
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
@@ -15,10 +22,3 @@ build/
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
-
-### Ice 1000 ###
-*.jar
-.idea/workspace.xml
-.idea/misc.xml
-.idea/uiDesigner.xml
-.idea/gradle.xml

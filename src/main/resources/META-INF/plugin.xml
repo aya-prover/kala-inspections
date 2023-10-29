@@ -1,7 +1,6 @@
 <idea-plugin>
   <id>org.ice1000.kala</id>
   <name>Kala Collections</name>
-  <version>0.8</version>
   <vendor email="ice1000kotlin@foxmail.com" url="https://ice1000.org">Tesla Zhang</vendor>
 
   <description><![CDATA[
@@ -16,8 +15,6 @@
       <li>Added an inspection for converting <code>toImmMap()</code> into <code>ImmMap.from</code></li>
     </ul>
     ]]></change-notes>
-
-  <idea-version since-build="203.0"/>
 
   <depends>com.intellij.modules.platform</depends>
   <depends>com.intellij.modules.java</depends>
