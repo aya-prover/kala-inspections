@@ -6,8 +6,6 @@ kala-collection = "0.67.0"
 # plugins
 kotlin = "1.8.0"
 gradleIntelliJPlugin = "1.16.0"
-qodana = "0.1.13"
-kover = "0.7.3"
 
 [libraries]
 annotations = { group = "org.jetbrains", name = "annotations", version.ref = "annotations" }
@@ -16,5 +14,3 @@ kala-collection = { group = "org.glavo.kala", name = "kala-collection", version.
 [plugins]
 gradleIntelliJPlugin = { id = "org.jetbrains.intellij", version.ref = "gradleIntelliJPlugin" }
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
-kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
-qodana = { id = "org.jetbrains.qodana", version.ref = "qodana" }
