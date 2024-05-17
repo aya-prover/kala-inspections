@@ -12,7 +12,7 @@
 
   <change-notes><![CDATA[
     <ul>
-      <li>Added an inspection for converting <code>toImmMap()</code> into <code>ImmMap.from</code></li>
+      <li>Better handling of primitive collections</li>
     </ul>
     ]]></change-notes>
 

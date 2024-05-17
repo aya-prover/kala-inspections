@@ -24,6 +24,7 @@ class MapPutUnetaInspection : KalaInspection() {
     private val tupClz = "$TU_PKG.Tuple2"
     private val method1Names = listOf("component1", "getKey")
     private val method2Names = listOf("component2", "getValue")
+    private val mapPutMethods = listOf("put", "set")
   }
 
   override fun getDisplayName() = KalaBundle.message("kala.map-put-uneta.name")
@@ -34,7 +35,7 @@ class MapPutUnetaInspection : KalaInspection() {
 
     val methodExpression = it.methodExpression
     val resolvedMethod = methodExpression.referenceName ?: return@methodCallVisitor
-    if (resolvedMethod != "put") return@methodCallVisitor
+    if (resolvedMethod !in mapPutMethods) return@methodCallVisitor
     val type = methodExpression.qualifierExpression?.type ?: return@methodCallVisitor
     if (!InheritanceUtil.isInheritor(type, clz)) return@methodCallVisitor
 

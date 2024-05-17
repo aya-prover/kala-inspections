@@ -13,7 +13,7 @@ class ViewSizeInspection : KalaInspection() {
     if (refName.text != "size") return@methodCallVisitor
     val type = m.qualifierExpression?.type ?: return@methodCallVisitor
     if (InheritanceUtil.isInheritor(type, "$PKG.base.AnyTraversable") &&
-      !InheritanceUtil.isInheritor(type, "$PKG.Collection")) {
+      !InheritanceUtil.isInheritor(type, "$PKG.AnyCollection")) {
       // This means it's potentially a 'view'
       holder.registerProblem(holder.manager.createProblemDescriptor(m,
         refName.textRangeInParent, displayName, ProblemHighlightType.WARNING, isOnTheFly))

@@ -13,10 +13,11 @@ import com.intellij.refactoring.suggested.endOffset
 class FuseImmSeqInspection : KalaInspection() {
   private val methods = listOf(
     "take", "drop", "takeLast", "dropLast", "updated",
+    "takeWhile", "dropWhile", "reversed", "slice",
     "prepended", "prependedAll", "appended", "appendedAll",
     "mapIndexed", "map", "mapNotNull", "mapIndexedNotNull",
     "filterIsInstance", "filter", "filterNotNull", "filterNot",
-    "flatMap",
+    "flatMap", "distinct", "sorted",
   )
 
   override fun getDisplayName() = KalaBundle.message("kala.fuse-immseq.name", "consecutive")

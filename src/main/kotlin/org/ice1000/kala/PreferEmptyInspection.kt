@@ -7,11 +7,15 @@ import com.intellij.psi.JavaPsiFacade
 class PreferEmptyInspection : KalaInspection() {
   private val classes = listOf(
     "$MU_PKG.MutableList" to "create",
+    "$MU_PKG.primitive.MutableIntList" to "create",
     "$MU_PKG.MutableMap" to "create",
+    "$MU_PKG.MutableSet" to "create",
     IMMUTABLE_SEQ to "empty",
+    "$INM_PKG.primitive.ImmutableIntSeq" to "empty",
     "$INM_PKG.ImmutableArray" to "empty",
     "$INM_PKG.ImmutableVector" to "empty",
     "$INM_PKG.ImmutableMap" to "empty",
+    "$INM_PKG.ImmutableSet" to "empty",
   )
 
   override fun getDisplayName() = KalaBundle.message("kala.prefer-empty.name")

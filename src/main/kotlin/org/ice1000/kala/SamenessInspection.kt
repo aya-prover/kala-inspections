@@ -37,7 +37,7 @@ class SamenessInspection : KalaInspection() {
     val self = selfExpr.reference?.resolve() ?: return@methodCallVisitor
     val arg = argExpr.reference?.resolve() ?: return@methodCallVisitor
 
-    if (InheritanceUtil.isInheritor(selfExpr.type, "$PKG.base.Traversable")
+    if (InheritanceUtil.isInheritor(selfExpr.type, "$PKG.base.AnyTraversable")
       && self == arg) {
       holder.registerProblem(holder.manager.createProblemDescriptor(
         it, displayName, FIX, ProblemHighlightType.WARNING, isOnTheFly
