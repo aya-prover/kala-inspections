@@ -8,7 +8,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiMethodCallExpression
 import com.intellij.psi.PsiReferenceExpression
-import com.intellij.refactoring.suggested.endOffset
+import com.intellij.psi.util.endOffset
 
 class FuseImmSeqInspection : KalaInspection() {
   private val methods = listOf(

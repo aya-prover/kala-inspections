@@ -20,8 +20,8 @@ class MapPutUnetaInspection : KalaInspection() {
       args.children.firstOrNull { it is PsiJavaToken && it.tokenType == JavaTokenType.COMMA }?.delete()
     }
 
-    private val clz = "$MU_PKG.MutableMapLike"
-    private val tupClz = "$TU_PKG.Tuple2"
+    private const val clz = "$MU_PKG.MutableMapLike"
+    private const val tupClz = "$TU_PKG.Tuple2"
     private val method1Names = listOf("component1", "getKey")
     private val method2Names = listOf("component2", "getValue")
     private val mapPutMethods = listOf("put", "set")
