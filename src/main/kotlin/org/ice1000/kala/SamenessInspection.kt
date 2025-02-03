@@ -7,6 +7,7 @@ import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.openapi.project.Project
 import com.intellij.psi.JavaPsiFacade
 import com.intellij.psi.PsiElementVisitor
+import com.intellij.psi.PsiReferenceExpression
 import com.intellij.psi.util.InheritanceUtil
 import com.siyeh.InspectionGadgetsBundle
 
@@ -29,16 +30,22 @@ class SamenessInspection : KalaInspection() {
   override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor = methodCallVisitor {
     val args = it.argumentList.expressions
     val methodExpr = it.methodExpression
-    val selfExpr = methodExpr.qualifierExpression ?: return@methodCallVisitor
+    val selfExpr = methodExpr.qualifierExpression as? PsiReferenceExpression ?: return@methodCallVisitor
+    val selfQualifier = selfExpr.qualifierExpression
     if (args.isEmpty()) return@methodCallVisitor
     if (methodExpr.referenceName != METHOD_NAME) return@methodCallVisitor
-    val argExpr = args.first() ?: return@methodCallVisitor
+    val argExpr = args.first()  as? PsiReferenceExpression ?: return@methodCallVisitor
+    val argQualifier = argExpr.qualifierExpression
+    // Ideally we should recursively compare the qualifier expressions, but this is enough to fix `ModulePath`
+    if (selfQualifier == null && argQualifier != null) return@methodCallVisitor
+    if (selfQualifier != null && argQualifier == null) return@methodCallVisitor
 
     val self = selfExpr.reference?.resolve() ?: return@methodCallVisitor
+    if (!InheritanceUtil.isInheritor(selfExpr.type, "$PKG.base.AnyTraversable"))
+      return@methodCallVisitor
     val arg = argExpr.reference?.resolve() ?: return@methodCallVisitor
 
-    if (InheritanceUtil.isInheritor(selfExpr.type, "$PKG.base.AnyTraversable")
-      && self == arg) {
+    if (self == arg) {
       holder.registerProblem(holder.manager.createProblemDescriptor(
         it, displayName, FIX, ProblemHighlightType.WARNING, isOnTheFly
       ))
