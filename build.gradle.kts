@@ -1,6 +1,6 @@
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
-fun properties(key: String) = providers.gradleProperty(key)
+fun properties(key: String) = providers.gradleProperty(key).get()
 fun environment(key: String) = providers.environmentVariable(key)
 
 plugins {
@@ -9,8 +9,8 @@ plugins {
   alias(libs.plugins.gradleIntelliJPlugin) // Gradle IntelliJ Plugin
 }
 
-group = properties("pluginGroup").get()
-version = properties("pluginVersion").get()
+group = properties("pluginGroup")
+version = properties("pluginVersion")
 
 // Configure project's dependencies
 repositories {
@@ -34,7 +34,7 @@ dependencies {
 
 tasks {
   wrapper {
-    gradleVersion = properties("gradleVersion").get()
+    gradleVersion = properties("gradleVersion")
   }
 
   patchPluginXml {
