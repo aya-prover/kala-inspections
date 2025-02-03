@@ -12,5 +12,5 @@ annotations = { group = "org.jetbrains", name = "annotations", version.ref = "an
 kala-collection = { group = "org.glavo.kala", name = "kala-collection", version.ref = "kala-collection" }
 
 [plugins]
-gradleIntelliJPlugin = { id = "org.jetbrains.intellij", version.ref = "gradleIntelliJPlugin" }
+gradleIntelliJPlugin = { id = "org.jetbrains.intellij.platform", version.ref = "gradleIntelliJPlugin" }
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
