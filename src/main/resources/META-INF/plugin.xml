@@ -12,7 +12,7 @@
 
   <change-notes><![CDATA[
     <ul>
-      <li>Better handling of primitive collections</li>
+      <li>Address the change in toSeq</li>
     </ul>
     ]]></change-notes>
 

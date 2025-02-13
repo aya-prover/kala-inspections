@@ -55,10 +55,8 @@ inline fun newVisitor(crossinline f: (PsiNewExpression) -> Unit) =
   }
 
 val INM_CLZ_FACTORIES = listOf(
-  "$PKG.Seq" to "toSeq",
-  IMMUTABLE_SEQ to "toImmutableSeq",
+  IMMUTABLE_SEQ to "toSeq",
   "$INM_PKG.ImmutableArray" to "toImmutableArray",
-  "$INM_PKG.ImmutableVector" to "toImmutableVector",
   "$INM_PKG.ImmutableLinkedSeq" to "toImmutableLinkedSeq",
   "$INM_PKG.ImmutableSizedLinkedSeq" to "toImmutableSizedLinkedList",
 )
