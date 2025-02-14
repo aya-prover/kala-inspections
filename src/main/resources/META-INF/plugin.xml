@@ -12,7 +12,7 @@
 
   <change-notes><![CDATA[
     <ul>
-      <li>Address the change in toSeq</li>
+      <li>Address the forgotten change about <code>toSeq</code> in fusion inspection.</li>
     </ul>
     ]]></change-notes>
 
