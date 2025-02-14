@@ -1,14 +1,12 @@
 [versions]
 # libraries
-annotations = "26.0.1"
-kala-collection = "0.78.0"
+kala-collection = "0.82.0"
 
 # plugins
-kotlin = "2.1.0"
+kotlin = "2.1.20-Beta2"
 gradleIntelliJPlugin = "2.2.1"
 
 [libraries]
-annotations = { group = "org.jetbrains", name = "annotations", version.ref = "annotations" }
 kala-collection = { group = "org.glavo.kala", name = "kala-collection", version.ref = "kala-collection" }
 
 [plugins]
