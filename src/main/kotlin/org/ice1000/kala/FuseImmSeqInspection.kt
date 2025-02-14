@@ -46,7 +46,7 @@ class FuseImmSeqInspection : KalaInspection() {
         val manager = PsiDocumentManager.getInstance(project)
         val dom = manager.getDocument(it.containingFile) ?: return
         manager.commitDocument(dom)
-        dom.insertString(it.endOffset, ".toImmutableSeq()")
+        dom.insertString(it.endOffset, ".toSeq()")
         dom.insertString(qualifier.endOffset, ".view()")
         manager.commitDocument(dom)
       }
