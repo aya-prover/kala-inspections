@@ -3,8 +3,8 @@
 kala-collection = "0.82.0"
 
 # plugins
-kotlin = "2.1.20-Beta2"
-gradleIntelliJPlugin = "2.2.1"
+kotlin = "2.1.20-RC3"
+gradleIntelliJPlugin = "2.6.0"
 
 [libraries]
 kala-collection = { group = "org.glavo.kala", name = "kala-collection", version.ref = "kala-collection" }
