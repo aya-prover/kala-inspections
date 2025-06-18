@@ -33,10 +33,6 @@ dependencies {
 }
 
 tasks {
-  wrapper {
-    gradleVersion = properties("gradleVersion")
-  }
-
   patchPluginXml {
     version = properties("pluginVersion")
     sinceBuild = properties("pluginSinceBuild")
