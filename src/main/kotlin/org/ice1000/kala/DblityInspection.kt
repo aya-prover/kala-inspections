@@ -8,6 +8,9 @@ import com.intellij.psi.*
 import org.jetbrains.annotations.Nls
 
 class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
+  override fun isEnabledByDefault() = true
+  override fun getGroupDisplayName() = KalaBundle.message("kala.aya.group.name")
+
   enum class Kind {
     Inherit, Bound, Closed;
 
@@ -92,7 +95,7 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       holder.registerProblem(
         actual,
         KalaBundle.message(
-          "kala.dblity.not.assignable",
+          "kala.aya.dblity.not.assignable",
           "'${actualKind.toAnnotationName()}'",
           "'${expectedKind.toAnnotationName()}'"
         ),
@@ -105,14 +108,14 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       // FIXME: this seems invisible for some reason, this path is reachable
       holder.registerProblem(
         actual,
-        KalaBundle.message("kala.dblity.smart.cast", expectedKind.toAnnotationName()),
+        KalaBundle.message("kala.aya.dblity.smart.cast", expectedKind.toAnnotationName()),
         ProblemHighlightType.INFORMATION
       )
     }
   }
 
   override fun getDisplayName(): @Nls(capitalization = Nls.Capitalization.Sentence) String {
-    return KalaBundle.message("kala.dblity")
+    return KalaBundle.message("kala.aya.dblity")
   }
 
   override fun buildVisitor(
