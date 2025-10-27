@@ -21,7 +21,8 @@ class KalaInspectionProvider : InspectionToolProvider {
     SizeCompareInspection::class.java,
     MapPutUnetaInspection::class.java,
     ViewToMapInspection::class.java,
-    SamenessInspection::class.java
+    SamenessInspection::class.java,
+    DblityInspection::class.java,
   )
 }
 
