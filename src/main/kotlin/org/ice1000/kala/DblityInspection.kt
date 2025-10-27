@@ -17,6 +17,15 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     fun toAnnotationName(): String {
       return "@$this"
     }
+
+    /**
+     * Check if [other] is assignable to [this], or in other words, [this] is assignable from [other]
+     * @return negative, if not assignable, positive if assignable with cast
+     */
+    fun isAssignable(other: Kind): Int {
+      val other = if (other == Inherit) Bound else other
+      return other.compareTo(this)
+    }
   }
 
   // Make it nullable even we don't really return null,
@@ -89,8 +98,8 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       || actualKind == null
     ) return
 
-    val cmp = expectedKind.compareTo(actualKind)
-    if (cmp > 0) {
+    val cmp = expectedKind.isAssignable(actualKind)
+    if (cmp < 0) {
       // not assignable
       holder.registerProblem(
         actual,
@@ -101,7 +110,7 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
         ),
         ProblemHighlightType.WARNING
       )
-    } else if (cmp < 0) {
+    } else if (cmp > 0) {
       // assignable with implicit cast
       // TODO: I want to make some highlight, but how?
       // sorry holder
