@@ -26,7 +26,7 @@ intellijPlatform.pluginConfiguration {
 dependencies {
   testImplementation(libs.kala.collection)
   intellijPlatform {
-    intellijIdeaCommunity("2024.3")
+    intellijIdeaCommunity("2025.2")
     bundledPlugin("com.intellij.java")
     testFramework(TestFrameworkType.Platform)
   }
