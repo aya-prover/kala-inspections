@@ -85,17 +85,19 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     expected: PsiType,
     actual: PsiExpression,
     holder: ProblemsHolder,
-    session: LocalInspectionToolSession
+    session: LocalInspectionToolSession,
+    strict: Boolean
   ) {
-    // we may assume [param] is explicitly annotated, otherwise no inspection will be performed
+    // we may assume [param] is explicitly annotated, otherwise no inspection can be performed
     // this case mostly happens on constructor
     val expectedKind = getKind(expected)
     val actualKind = getKind(actual)
 
     if (expectedKind == null
       || expectedKind == Kind.Inherit
-      // don't skip if `actualKind` is `Inherit`, we treat rhs `Inherit` as Bound, but still skip if no kind
       || actualKind == null
+      // in strict mode, we treat `Inherit` as `Bound` at rhs
+      || (!strict && actualKind == Kind.Inherit)
     ) return
 
     val cmp = expectedKind.isAssignable(actualKind)
@@ -138,9 +140,10 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
         val resolved = callExpression.resolveMethod() ?: return
         val args = callExpression.argumentList ?: return
 
+        // TODO: deal with vararg
         val zipped = resolved.parameterList.parameters.zip(args.expressions)
         for ((param, arg) in zipped) {
-          doInspect(param.type, arg, holder, session)
+          doInspect(param.type, arg, holder, session, true)
         }
       }
 
@@ -151,8 +154,14 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
 
         // just get kind, left expression is normally not complicate
         val lKind = expression.lExpression.type ?: return
-        doInspect(lKind, expression.rExpression ?: return, holder, session)
+        doInspect(lKind, expression.rExpression ?: return, holder, session, false)
       }
+
+      override fun visitReturnStatement(statement: PsiReturnStatement) {
+        super.visitReturnStatement(statement)
+      }
+
+      // TODO: deal with variable declaration with initializer
     }
   }
 }
