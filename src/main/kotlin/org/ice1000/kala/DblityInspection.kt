@@ -85,8 +85,8 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
 
     if (expectedKind == null
       || expectedKind == Kind.Inherit
+      // don't skip if `actualKind` is `Inherit`, we treat rhs `Inherit` as Bound, but still skip if no kind
       || actualKind == null
-      || actualKind == Kind.Inherit
     ) return
 
     val cmp = expectedKind.compareTo(actualKind)
