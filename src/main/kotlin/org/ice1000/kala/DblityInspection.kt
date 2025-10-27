@@ -4,14 +4,7 @@ import com.intellij.codeInspection.AbstractBaseJavaLocalInspectionTool
 import com.intellij.codeInspection.LocalInspectionToolSession
 import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.codeInspection.ProblemsHolder
-import com.intellij.psi.JavaElementVisitor
-import com.intellij.psi.JavaTokenType
-import com.intellij.psi.PsiAssignmentExpression
-import com.intellij.psi.PsiCallExpression
-import com.intellij.psi.PsiElementVisitor
-import com.intellij.psi.PsiExpression
-import com.intellij.psi.PsiMethodCallExpression
-import com.intellij.psi.PsiType
+import com.intellij.psi.*
 import org.jetbrains.annotations.Nls
 
 class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
@@ -28,9 +21,9 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
   fun getKind(ty: PsiType): Kind? {
     // https://github.com/JetBrains/intellij-community/blob/d18a3edba879d572a2e1581bc39ce8faaa0c565c/java/openapi/src/com/intellij/codeInsight/NullableNotNullDialog.java
     val isClosed =
-      ty.annotations.any { it.qualifiedName?.endsWith("Closed") == true }    // FIXME: don't hard code, make a setting panel, see above
+      ty.annotations.any { it.qualifiedName?.endsWith("Closed") == true } // FIXME: don't hard code, make a setting panel, see above
     val isBound =
-      ty.annotations.any { it.qualifiedName?.endsWith("Bound") == true }     // FIXME: make a inspection that prevents [Closed] and [Bound] annotates the same type
+      ty.annotations.any { it.qualifiedName?.endsWith("Bound") == true } // FIXME: make a inspection that prevents [Closed] and [Bound] annotates the same type
 
     return when {
       isClosed -> Kind.Closed
@@ -45,15 +38,19 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
   fun getKind(expr: PsiExpression): Kind? {
     val ty = expr.type ?: return null
     val basicKind = getKind(ty)
-    // if [expr] is already annotated or cannot used for inferring
+    // if [expr] is already annotated or cannot be used for inferring
     if (basicKind == null || basicKind != Kind.Inherit) return basicKind
 
     // otherwise, try to infer the real kind
-    // TODO: handle paraned expr?
-
-    // this include:
+    // this includes:
     // * getter of record
     // * method of some class, like Closure
+    if (expr is PsiParenthesizedExpression) {
+      val innerExpr = expr.expression
+      if (innerExpr != null) {
+        return getKind(innerExpr)
+      }
+    }
     if (expr is PsiMethodCallExpression) {
       val methodExpr = expr.methodExpression
       val receiver = methodExpr.qualifierExpression
@@ -76,7 +73,6 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     expected: PsiType,
     actual: PsiExpression,
     holder: ProblemsHolder,
-    isOnTheFly: Boolean,
     session: LocalInspectionToolSession
   ) {
     // we may assume [param] is explicitly annotated, otherwise no inspection will be performed
@@ -132,7 +128,7 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
 
         val zipped = resolved.parameterList.parameters.zip(args.expressions)
         for ((param, arg) in zipped) {
-          doInspect(param.type, arg, holder, isOnTheFly, session)
+          doInspect(param.type, arg, holder, session)
         }
       }
 
@@ -143,7 +139,7 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
 
         // just get kind, left expression is normally not complicate
         val lKind = expression.lExpression.type ?: return
-        doInspect(lKind, expression.rExpression ?: return, holder, isOnTheFly, session)
+        doInspect(lKind, expression.rExpression ?: return, holder, session)
       }
     }
   }
