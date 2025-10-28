@@ -2,6 +2,8 @@
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
     public interface Term {}
+
+    @Bound
     public record SubTerm(Term inheritSubTerm, @Closed Term closedSubTerm, int integer) implements Term {
         public void doSomething() {
             // warning
@@ -46,12 +48,13 @@ public class Main {
         // ok, `Inherit` is treated as `Bound` at rhs
         acceptBoundTerm(i);
 
-        @Closed Term j;
         // ok, even `i` is `Inherit`, this is the only way to cast an `Inherit` to `Closed`
-        j = i;
+        @Closed Term j = i;
 
         // the return type of any method will inherit the db-closeness from the receiver, even types don't match
-        @Closed int ii;
-        ii = sub.integer();
+        @Closed int ii = sub.integer();
+
+        // SubTerm is annotated as Bound, thus the new expression is considered Bound
+        @Closed Term s = new SubTerm(null, null, 0);
     }
 }

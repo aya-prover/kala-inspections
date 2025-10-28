@@ -10,6 +10,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.*
 import com.intellij.psi.impl.light.LightRecordField
 import com.intellij.psi.util.parentOfTypes
+import com.intellij.psi.impl.light.LightRecordField
+import com.intellij.psi.util.parentOfTypes
 import org.jetbrains.annotations.Nls
 
 class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
@@ -73,55 +75,71 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     // this includes:
     // * getter of record
     // * method of some class, like Closure
-    if (expr is PsiParenthesizedExpression) {
-      val innerExpr = expr.expression
-      if (innerExpr != null) {
-        return getKind(innerExpr, holder)
+    when (expr) {
+      is PsiParenthesizedExpression -> {
+        val innerExpr = expr.expression
+        if (innerExpr != null) {
+          return getKind(innerExpr, holder)
+        }
       }
-    }
-    if (expr is PsiReferenceExpression) {
-      val def = expr.resolve() ?: return basicKind
-      if (def is LightRecordField) {
-        // First see annotations
-        val kind = getKind(def.annotations)
-        // if there is explicit annotation, use those
-        if (kind != null && kind != Kind.Inherit) return kind
-        // otherwise, infer from the switch
-      }
-      if (def is PsiPatternVariable) {
-        val parent = def.parentOfTypes(PsiInstanceOfExpression::class, PsiSwitchBlock::class, withSelf = false)
-        when (parent) {
-          is PsiInstanceOfExpression -> {
-            val operadKind = getKind(parent.operand, holder)
-            if (operadKind != null && operadKind != Kind.Inherit) {
-              proposeDeleteAnnotations(def.annotations, holder)
-            }
-            return operadKind
-          }
-          is PsiSwitchBlock -> {
-            val expression = parent.expression
-            if (expression != null) {
-              val exprKind = getKind(expression, holder)
-              if (exprKind != null && exprKind != Kind.Inherit) {
+
+      is PsiReferenceExpression -> {
+        val def = expr.resolve() ?: return basicKind
+        if (def is LightRecordField) {
+          // First see annotations
+          val kind = getKind(def.annotations)
+          // if there is explicit annotation, use those
+          if (kind != null && kind != Kind.Inherit) return kind
+          // otherwise, infer from the switch
+        }
+        if (def is PsiPatternVariable) {
+          val parent = def.parentOfTypes(PsiInstanceOfExpression::class, PsiSwitchBlock::class, withSelf = false)
+          when (parent) {
+            is PsiInstanceOfExpression -> {
+              val operadKind = getKind(parent.operand, holder)
+              if (operadKind != null && operadKind != Kind.Inherit) {
                 proposeDeleteAnnotations(def.annotations, holder)
               }
-              return exprKind
+              return operadKind
+            }
+            is PsiSwitchBlock -> {
+              val expression = parent.expression
+              if (expression != null) {
+                val exprKind = getKind(expression, holder)
+                if (exprKind != null && exprKind != Kind.Inherit) {
+                  proposeDeleteAnnotations(def.annotations, holder)
+                }
+                return exprKind
+              }
             }
           }
         }
       }
-    }
-    if (expr is PsiMethodCallExpression) {
-      val methodExpr = expr.methodExpression
-      val receiver = methodExpr.qualifierExpression
 
-      if (receiver != null) {
-        val receiverKind = getKind(receiver, holder)
-        if (receiverKind != null) {
-          // basicKind (the return type of [expr]) is Inherit, and we know the kind of [receiver]
-          // thus the real kind of [expr] is the kind of [receiver]
+      is PsiMethodCallExpression -> {
+        val methodExpr = expr.methodExpression
+        val receiver = methodExpr.qualifierExpression
 
-          return receiverKind
+        if (receiver != null) {
+          val receiverKind = getKind(receiver, holder)
+          if (receiverKind != null) {
+            // basicKind (the return type of [expr]) is Inherit, and we know the kind of [receiver]
+            // thus the real kind of [expr] is the kind of [receiver]
+
+            return receiverKind
+          }
+        }
+      }
+
+      is PsiNewExpression -> {
+        // check if the class is marked
+        val annotations = expr.resolveConstructor()
+          ?.containingClass
+          ?.annotations
+
+        if (annotations != null) {
+          val classKind = getKind(annotations)
+          if (classKind != null) return classKind
         }
       }
     }
@@ -218,11 +236,16 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
         doInspect(lKind, expression.rExpression ?: return, holder, session, false)
       }
 
-      override fun visitReturnStatement(statement: PsiReturnStatement) {
-        super.visitReturnStatement(statement)
+      override fun visitDeclarationStatement(statement: PsiDeclarationStatement) {
+        super.visitDeclarationStatement(statement)
+        statement.declaredElements.forEach { e ->
+          if (e is PsiLocalVariable) {
+            val initializer = e.initializer ?: return@forEach
+            val expected = e.type
+            doInspect(expected, initializer, holder, session, false)
+          }
+        }
       }
-
-      // TODO: deal with variable declaration with initializer
     }
   }
 }
