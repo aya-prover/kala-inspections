@@ -5,7 +5,6 @@ public class Main {
 
     public enum Unit implements Term { INSTANCE }
 
-    @Bound
     public record SubTerm(Term inheritSubTerm, @Closed Term closedSubTerm, int integer) implements Term {
         public void doSomething() {
             // warning
@@ -16,6 +15,9 @@ public class Main {
             acceptClosedTerm(closedSubTerm);
         }
     }
+
+    @Bound
+    public record AnnotatedTerm(Term term) implements Term {}
 
     public static void acceptClosedTerm(@Closed Term term) {}
 
@@ -58,8 +60,10 @@ public class Main {
         // the return type of any method will inherit the db-closeness from the receiver, even types don't match
         @Closed int ii = sub.integer();
 
-        // SubTerm is annotated as Bound, thus the new expression is considered Bound
-        @Closed Term s = new SubTerm(null, null, 0);
+        // AnnotatedTerm is annotated as Bound, thus any expression with type AnnotatedTerm is considered Bound
+        @Closed Term s = new AnnotatedTerm(null);
+        AnnotatedTerm ss = new AnnotatedTerm(null);
+        acceptClosedTerm(ss);
 
         // `null` is not Inherit, Bound or Closed
         acceptClosedTerm(null);

@@ -73,6 +73,15 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     // TODO: comment this line out to trigger the "unused annotation" inspection
     if (basicKind == null || basicKind != Kind.Inherit) return basicKind
 
+    // try get from type definition
+    if (ty is PsiClassType) {
+      val anno = ty.resolve()?.annotations
+      if (anno != null) {
+        val defKind = getKind(anno)
+        if (defKind != null && defKind != Kind.Inherit) return defKind
+      }
+    }
+
     // otherwise, try to infer the real kind
     // this includes:
     // * getter of record
@@ -130,18 +139,6 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
 
             return receiverKind
           }
-        }
-      }
-
-      is PsiNewExpression -> {
-        // check if the class is marked
-        val annotations = expr.resolveConstructor()
-          ?.containingClass
-          ?.annotations
-
-        if (annotations != null) {
-          val classKind = getKind(annotations)
-          if (classKind != null) return classKind
         }
       }
     }
