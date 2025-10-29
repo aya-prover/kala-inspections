@@ -5,6 +5,8 @@ import com.intellij.codeInspection.LocalInspectionToolSession
 import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.psi.*
+import com.intellij.psi.impl.light.LightRecordField
+import com.intellij.psi.util.parentOfTypes
 import org.jetbrains.annotations.Nls
 
 class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
@@ -28,14 +30,16 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     }
   }
 
-  // Make it nullable even we don't really return null,
-  // in case we add [Inherit] annotation and want to annotate [Term]s explicitly
-  fun getKind(ty: PsiType): Kind? {
+  fun getKind(ty: PsiType): Kind? = getKind(ty.annotations)
+
+  /// Make it nullable even we don't really return null,
+  /// in case we add [Inherit] annotation and want to annotate [Term]s explicitly
+  fun getKind(annotations: Array<out PsiAnnotation>): Kind? {
     // https://github.com/JetBrains/intellij-community/blob/d18a3edba879d572a2e1581bc39ce8faaa0c565c/java/openapi/src/com/intellij/codeInsight/NullableNotNullDialog.java
     val isClosed =
-      ty.annotations.any { it.qualifiedName?.endsWith("Closed") == true } // FIXME: don't hard code, make a setting panel, see above
+      annotations.any { it.qualifiedName?.endsWith("Closed") == true } // FIXME: don't hard code, make a setting panel, see above
     val isBound =
-      ty.annotations.any { it.qualifiedName?.endsWith("Bound") == true } // FIXME: make a inspection that prevents [Closed] and [Bound] annotates the same type
+      annotations.any { it.qualifiedName?.endsWith("Bound") == true } // FIXME: make a inspection that prevents [Closed] and [Bound] annotates the same type
 
     return when {
       isClosed -> Kind.Closed
@@ -61,6 +65,25 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       val innerExpr = expr.expression
       if (innerExpr != null) {
         return getKind(innerExpr)
+      }
+    }
+    if (expr is PsiReferenceExpression) {
+      val def = expr.resolve() ?: return basicKind
+      if (def is LightRecordField) {
+        // First see annotations
+        val kind = getKind(def.annotations)
+        // if there is explicit annotation, use those
+        if (kind != null && kind != Kind.Inherit) return kind
+        // otherwise, infer from the switch
+      }
+      if (def is PsiPatternVariable) {
+        val parent = def.parentOfTypes(PsiInstanceOfExpression::class, PsiSwitchStatement::class, withSelf = false)
+        if (parent is PsiInstanceOfExpression) {
+          return getKind(parent.operand)
+        } else if (parent is PsiSwitchStatement) {
+          val expression = parent.expression
+          if (expression != null) return getKind(expression)
+        }
       }
     }
     if (expr is PsiMethodCallExpression) {

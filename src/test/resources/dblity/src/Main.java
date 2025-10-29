@@ -18,6 +18,12 @@ public class Main {
     public static void acceptBoundTerm(@Bound Term term) {}
 
     public void testSubterm(@Bound SubTerm sub) {
+        if (sub instanceof SubTerm(var inheritSubTerm, _, _)) {
+            acceptClosedTerm(inheritSubTerm);
+
+            acceptBoundTerm(inheritSubTerm);
+        }
+
         // sub.inheritSubTerm inherits the db-closeness from the receiver,
         // thus it is Bound
         acceptClosedTerm(sub.inheritSubTerm());
