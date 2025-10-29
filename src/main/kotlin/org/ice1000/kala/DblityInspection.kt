@@ -51,7 +51,7 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
   /**
    * @return null if necessary information is missing, the inspection should be stopped.
    */
-  fun getKind(expr: PsiExpression): Kind? {
+  fun getKind(expr: PsiExpression, holder: ProblemsHolder): Kind? {
     val ty = expr.type ?: return null
     val basicKind = getKind(ty)
     // if [expr] is already annotated or cannot be used for inferring
@@ -64,7 +64,7 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     if (expr is PsiParenthesizedExpression) {
       val innerExpr = expr.expression
       if (innerExpr != null) {
-        return getKind(innerExpr)
+        return getKind(innerExpr, holder)
       }
     }
     if (expr is PsiReferenceExpression) {
@@ -79,10 +79,20 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       if (def is PsiPatternVariable) {
         val parent = def.parentOfTypes(PsiInstanceOfExpression::class, PsiSwitchStatement::class, withSelf = false)
         if (parent is PsiInstanceOfExpression) {
-          return getKind(parent.operand)
+          val operadKind = getKind(parent.operand, holder)
+          if (operadKind != null && operadKind != Kind.Inherit) {
+            // Todo: warn about unused annotation
+          }
+          return operadKind
         } else if (parent is PsiSwitchStatement) {
           val expression = parent.expression
-          if (expression != null) return getKind(expression)
+          if (expression != null) {
+            val exprKind = getKind(expression, holder)
+            if (exprKind != null && exprKind != Kind.Inherit) {
+              // Todo: warn about unused annotation
+            }
+            return exprKind
+          }
         }
       }
     }
@@ -91,7 +101,7 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       val receiver = methodExpr.qualifierExpression
 
       if (receiver != null) {
-        val receiverKind = getKind(receiver)
+        val receiverKind = getKind(receiver, holder)
         if (receiverKind != null) {
           // basicKind (the return type of [expr]) is Inherit, and we know the kind of [receiver]
           // thus the real kind of [expr] is the kind of [receiver]
@@ -114,7 +124,7 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     // we may assume [param] is explicitly annotated, otherwise no inspection can be performed
     // this case mostly happens on constructor
     val expectedKind = getKind(expected)
-    val actualKind = getKind(actual)
+    val actualKind = getKind(actual, holder)
 
     if (expectedKind == null
       || expectedKind == Kind.Inherit

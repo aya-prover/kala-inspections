@@ -24,6 +24,12 @@ public class Main {
             acceptBoundTerm(inheritSubTerm);
         }
 
+        switch (sub) {
+            case SubTerm(var inheritSubTerm, _, _) -> {
+                acceptClosedTerm(inheritSubTerm);
+            }
+        }
+
         // sub.inheritSubTerm inherits the db-closeness from the receiver,
         // thus it is Bound
         acceptClosedTerm(sub.inheritSubTerm());
