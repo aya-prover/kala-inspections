@@ -66,6 +66,8 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
    */
   fun getKind(expr: PsiExpression, holder: ProblemsHolder): Kind? {
     val ty = expr.type ?: return null
+    if (ty == PsiTypes.nullType()) return null
+
     val basicKind = getKind(ty)
     // if [expr] is already annotated or cannot be used for inferring
     // TODO: comment this line out to trigger the "unused annotation" inspection

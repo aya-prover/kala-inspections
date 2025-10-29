@@ -60,6 +60,10 @@ public class Main {
 
         // SubTerm is annotated as Bound, thus the new expression is considered Bound
         @Closed Term s = new SubTerm(null, null, 0);
+
+        // `null` is not Inherit, Bound or Closed
+        acceptClosedTerm(null);
+        acceptBoundTerm(null);
     }
 
     public void inconsistent() {
