@@ -89,21 +89,24 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
         // otherwise, infer from the switch
       }
       if (def is PsiPatternVariable) {
-        val parent = def.parentOfTypes(PsiInstanceOfExpression::class, PsiSwitchStatement::class, withSelf = false)
-        if (parent is PsiInstanceOfExpression) {
-          val operadKind = getKind(parent.operand, holder)
-          if (operadKind != null && operadKind != Kind.Inherit) {
-            proposeDeleteAnnotations(def.annotations, holder)
-          }
-          return operadKind
-        } else if (parent is PsiSwitchStatement) {
-          val expression = parent.expression
-          if (expression != null) {
-            val exprKind = getKind(expression, holder)
-            if (exprKind != null && exprKind != Kind.Inherit) {
+        val parent = def.parentOfTypes(PsiInstanceOfExpression::class, PsiSwitchBlock::class, withSelf = false)
+        when (parent) {
+          is PsiInstanceOfExpression -> {
+            val operadKind = getKind(parent.operand, holder)
+            if (operadKind != null && operadKind != Kind.Inherit) {
               proposeDeleteAnnotations(def.annotations, holder)
             }
-            return exprKind
+            return operadKind
+          }
+          is PsiSwitchBlock -> {
+            val expression = parent.expression
+            if (expression != null) {
+              val exprKind = getKind(expression, holder)
+              if (exprKind != null && exprKind != Kind.Inherit) {
+                proposeDeleteAnnotations(def.annotations, holder)
+              }
+              return exprKind
+            }
           }
         }
       }
