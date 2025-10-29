@@ -2,8 +2,11 @@ package org.ice1000.kala
 
 import com.intellij.codeInspection.AbstractBaseJavaLocalInspectionTool
 import com.intellij.codeInspection.LocalInspectionToolSession
+import com.intellij.codeInspection.LocalQuickFix
+import com.intellij.codeInspection.ProblemDescriptor
 import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.codeInspection.ProblemsHolder
+import com.intellij.openapi.project.Project
 import com.intellij.psi.*
 import com.intellij.psi.impl.light.LightRecordField
 import com.intellij.psi.util.parentOfTypes
@@ -48,6 +51,14 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     }
   }
 
+  object DeleteAnnotationFix : LocalQuickFix {
+    override fun getFamilyName() = KalaBundle.message("kala.aya.dblity.delete.annotation.fix.name")
+    override fun applyFix(project: Project, descriptor: ProblemDescriptor) {
+      val annotation = descriptor.psiElement as? PsiAnnotation ?: return
+      annotation.delete()
+    }
+  }
+
   /**
    * @return null if necessary information is missing, the inspection should be stopped.
    */
@@ -55,6 +66,7 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     val ty = expr.type ?: return null
     val basicKind = getKind(ty)
     // if [expr] is already annotated or cannot be used for inferring
+    // TODO: comment this line out to trigger the "unused annotation" inspection
     if (basicKind == null || basicKind != Kind.Inherit) return basicKind
 
     // otherwise, try to infer the real kind
@@ -81,7 +93,7 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
         if (parent is PsiInstanceOfExpression) {
           val operadKind = getKind(parent.operand, holder)
           if (operadKind != null && operadKind != Kind.Inherit) {
-            // Todo: warn about unused annotation
+            proposeDeleteAnnotations(def.annotations, holder)
           }
           return operadKind
         } else if (parent is PsiSwitchStatement) {
@@ -89,7 +101,7 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
           if (expression != null) {
             val exprKind = getKind(expression, holder)
             if (exprKind != null && exprKind != Kind.Inherit) {
-              // Todo: warn about unused annotation
+              proposeDeleteAnnotations(def.annotations, holder)
             }
             return exprKind
           }
@@ -112,6 +124,19 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     }
 
     return basicKind
+  }
+
+  private fun proposeDeleteAnnotations(
+    annotations: Array<out PsiAnnotation>,
+    holder: ProblemsHolder
+  ) {
+    annotations.forEach {
+      holder.registerProblem(
+        it, KalaBundle.message("kala.aya.dblity.unused.annotation"),
+        ProblemHighlightType.LIKE_UNUSED_SYMBOL, it.textRangeInParent,
+        DeleteAnnotationFix
+      )
+    }
   }
 
   fun doInspect(
