@@ -1,16 +1,8 @@
 package org.ice1000.kala
 
-import com.intellij.codeInspection.AbstractBaseJavaLocalInspectionTool
-import com.intellij.codeInspection.LocalInspectionToolSession
-import com.intellij.codeInspection.LocalQuickFix
-import com.intellij.codeInspection.ProblemDescriptor
-import com.intellij.codeInspection.ProblemHighlightType
-import com.intellij.codeInspection.ProblemsHolder
+import com.intellij.codeInspection.*
 import com.intellij.openapi.project.Project
 import com.intellij.psi.*
-import com.intellij.psi.impl.light.LightRecordField
-import com.intellij.psi.util.parentOfTypes
-import com.intellij.psi.impl.light.LightRecordField
 import com.intellij.psi.util.parentOfTypes
 import org.jetbrains.annotations.Nls
 
@@ -96,13 +88,6 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
 
       is PsiReferenceExpression -> {
         val def = expr.resolve() ?: return basicKind
-        if (def is LightRecordField) {
-          // First see annotations
-          val kind = getKind(def.annotations)
-          // if there is explicit annotation, use those
-          if (kind != null && kind != Kind.Inherit) return kind
-          // otherwise, infer from the switch
-        }
         if (def is PsiPatternVariable) {
           val parent = def.parentOfTypes(PsiInstanceOfExpression::class, PsiSwitchBlock::class, withSelf = false)
           when (parent) {

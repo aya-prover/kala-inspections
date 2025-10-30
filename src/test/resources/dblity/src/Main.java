@@ -1,7 +1,7 @@
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
-    public interface Term {}
+    public sealed interface Term {}
 
     public enum Unit implements Term { INSTANCE }
 
@@ -18,6 +18,8 @@ public class Main {
 
     @Bound
     public record AnnotatedTerm(Term term) implements Term {}
+
+    public record NormalTerm(Term sub0) implements Term {}
 
     public static void acceptClosedTerm(@Closed Term term) {}
 
@@ -80,5 +82,24 @@ public class Main {
         var l = k;
         // `l` is considered a `Term`, `@Closed` is lost.
         acceptClosedTerm(l);
+    }
+
+    public void switchCase(@Closed Term term) {
+        switch (term) {
+            case AnnotatedTerm annotatedTerm -> {
+                // class annotation has higher priority
+                // TODO: in fact, we should report a warn in this case
+                acceptClosedTerm(annotatedTerm);
+            }
+            case NormalTerm normalTerm -> {
+                // normalTerm is considered Closed
+                acceptClosedTerm(normalTerm);
+            }
+            case SubTerm(var inherit, _, _) -> {
+                // inherit is considered Closed
+                acceptClosedTerm(inherit);
+            }
+            case Unit unit -> {}
+        }
     }
 }
