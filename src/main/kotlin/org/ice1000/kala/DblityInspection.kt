@@ -156,8 +156,11 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     }
 
     private fun doVisitSwitch(sw: PsiSwitchBlock) {
-      sw.expression?.accept(this)
-      sw.body?.accept(this)
+      val expression = sw.expression
+      expression?.accept(this)
+      sw.body?.statements?.forEach {
+        it.accept(this)
+      }
     }
 
     override fun visitSwitchLabeledRuleStatement(statement: PsiSwitchLabeledRuleStatement) {
