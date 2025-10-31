@@ -81,8 +81,10 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       // TODO: deal with vararg
       val zipped = resolved.parameterList.parameters.zip(args.expressions)
       for ((param, arg) in zipped) {
-        val kind = getKind(param.type) ?: continue
-        doInspect(kind, arg, holder, true)
+        val kind = getKind(param.type)
+        if (kind != null) {
+          doInspect(kind, getKind(arg), arg, holder, true)
+        }
       }
     }
 
@@ -92,18 +94,31 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       // just get kind, left expression is normally not complicate
       val lExpr = expression.lExpression
       val lKind = lExpr.type ?: return
-      val expected = getKind(lKind) ?: return
-      doInspect(expected, expression.rExpression ?: return, holder, false)
-      known[lExpr.textRange] = expected
+      val expected = getKind(lKind)
+      if (expected != null) {
+        val rhs = expression.rExpression ?: return
+        val actualKind = getKind(rhs)
+        known[lExpr.textRange] = expected
+        if (expected == actualKind) {
+          proposeDeleteAnnotations(lKind.annotations, holder)
+        }
+        doInspect(expected, actualKind, rhs, holder, false)
+      }
     }
 
     override fun visitDeclarationStatement(statement: PsiDeclarationStatement) {
       statement.declaredElements.forEach { e ->
         if (e is PsiLocalVariable) {
           val initializer = e.initializer ?: return@forEach
-          val expected = getKind(e.type) ?: return@forEach
-          doInspect(expected, initializer, holder, false)
-          known[e.textRange] = expected
+          val expected = getKind(e.annotations)
+          if (expected != null) {
+            val actualKind = getKind(initializer)
+            known[e.textRange] = expected
+            if (expected == actualKind) {
+              proposeDeleteAnnotations(e.annotations, holder)
+            }
+            doInspect(expected, actualKind, initializer, holder, false)
+          }
         }
       }
     }
@@ -112,7 +127,7 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       val parent = variable.parentOfTypes(PsiInstanceOfExpression::class, PsiSwitchBlock::class, withSelf = false)
       when (parent) {
         is PsiInstanceOfExpression -> {
-          val operadKind = getKind(parent.operand, holder)
+          val operadKind = getKind(parent.operand)
           if (operadKind != null && operadKind != Kind.Inherit) {
             proposeDeleteAnnotations(variable.annotations, holder)
           }
@@ -122,7 +137,7 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
         is PsiSwitchBlock -> {
           val expression = parent.expression
           if (expression != null) {
-            val exprKind = getKind(expression, holder)
+            val exprKind = getKind(expression)
             if (exprKind != null && exprKind != Kind.Inherit) {
               proposeDeleteAnnotations(variable.annotations, holder)
             }
@@ -133,8 +148,16 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     }
 
     override fun visitSwitchStatement(statement: PsiSwitchStatement) {
-      statement.expression?.accept(this)
-      statement.body?.accept(this)
+      doVisitSwitch(statement)
+    }
+
+    override fun visitSwitchExpression(expression: PsiSwitchExpression) {
+      doVisitSwitch(expression)
+    }
+
+    private fun doVisitSwitch(sw: PsiSwitchBlock) {
+      sw.expression?.accept(this)
+      sw.body?.accept(this)
     }
 
     override fun visitSwitchLabeledRuleStatement(statement: PsiSwitchLabeledRuleStatement) {
@@ -164,14 +187,11 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
 
     fun doInspect(
       expectedKind: Kind,
+      actualKind: Kind?,
       actual: PsiExpression,
       holder: ProblemsHolder,
       strict: Boolean
     ) {
-      // we may assume [param] is explicitly annotated, otherwise no inspection can be performed
-      // this case mostly happens on constructor
-      val actualKind = getKind(actual, holder)
-
       if (expectedKind == Kind.Inherit || actualKind == null || (!strict && actualKind == Kind.Inherit)) return
 
       val cmp = expectedKind.isAssignable(actualKind)
@@ -202,7 +222,7 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     /**
      * @return null if necessary information is missing, the inspection should be stopped.
      */
-    fun getKind(expr: PsiExpression, holder: ProblemsHolder): Kind? {
+    fun getKind(expr: PsiExpression): Kind? {
       val ty = expr.type ?: return null
       if (ty == PsiTypes.nullType()) return null
 
@@ -226,7 +246,7 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       when (expr) {
         is PsiParenthesizedExpression -> {
           val innerExpr = expr.expression
-          if (innerExpr != null) return getKind(innerExpr, holder)
+          if (innerExpr != null) return getKind(innerExpr)
         }
 
         is PsiReferenceExpression -> {
@@ -239,7 +259,7 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
           val receiver = methodExpr.qualifierExpression
 
           if (receiver != null) {
-            val receiverKind = getKind(receiver, holder)
+            val receiverKind = getKind(receiver)
             if (receiverKind != null) {
               // basicKind (the return type of [expr]) is Inherit, and we know the kind of [receiver]
               // thus the real kind of [expr] is the kind of [receiver]

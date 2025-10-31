@@ -28,10 +28,10 @@ public class Main {
     public static void acceptClosedInt(@Closed int i) {}
 
     public void testSubterm(@Bound SubTerm sub) {
-        if (sub instanceof SubTerm(var inheritSubTerm, _, _)) {
-            acceptClosedTerm(inheritSubTerm);
+        if (sub instanceof SubTerm(var ifInstanceofInherit, _, _)) {
+            acceptClosedTerm(ifInstanceofInherit);
 
-            acceptBoundTerm(inheritSubTerm);
+            acceptBoundTerm(ifInstanceofInherit);
         }
 
         switch (sub) {
