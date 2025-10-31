@@ -2,6 +2,7 @@ package org.ice1000.kala
 
 import com.intellij.codeInspection.*
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.TextRange
 import com.intellij.psi.*
 import com.intellij.psi.util.parentOfTypes
 import org.jetbrains.annotations.Nls
@@ -27,24 +28,6 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     }
   }
 
-  fun getKind(ty: PsiType): Kind? = getKind(ty.annotations)
-
-  /// Make it nullable even we don't really return null,
-  /// in case we add [Inherit] annotation and want to annotate [Term]s explicitly
-  fun getKind(annotations: Array<out PsiAnnotation>): Kind? {
-    // https://github.com/JetBrains/intellij-community/blob/d18a3edba879d572a2e1581bc39ce8faaa0c565c/java/openapi/src/com/intellij/codeInsight/NullableNotNullDialog.java
-    val isClosed =
-      annotations.any { it.qualifiedName?.endsWith("Closed") == true } // FIXME: don't hard code, make a setting panel, see above
-    val isBound =
-      annotations.any { it.qualifiedName?.endsWith("Bound") == true } // FIXME: make a inspection that prevents [Closed] and [Bound] annotates the same type
-
-    return when {
-      isClosed -> Kind.Closed
-      isBound -> Kind.Bound
-      else -> Kind.Inherit
-    }
-  }
-
   object DeleteAnnotationFix : LocalQuickFix {
     override fun getFamilyName() = KalaBundle.message("kala.aya.dblity.delete.annotation.fix.name")
     override fun applyFix(project: Project, descriptor: ProblemDescriptor) {
@@ -53,138 +36,234 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     }
   }
 
-  /**
-   * @return null if necessary information is missing, the inspection should be stopped.
-   */
-  fun getKind(expr: PsiExpression, holder: ProblemsHolder): Kind? {
-    val ty = expr.type ?: return null
-    if (ty == PsiTypes.nullType()) return null
+  /// This is not "proper" DFA, just a sequential analysis
+  class SequentialDFA(
+    val holder: ProblemsHolder,
+    val known: MutableMap<TextRange, Kind?> = mutableMapOf()
+  ) : JavaElementVisitor() {
+    fun getKind(ty: PsiAnnotationOwner): Kind? = getKind(ty.annotations)
 
-    val basicKind = getKind(ty)
-    // if [expr] is already annotated or cannot be used for inferring
-    // TODO: comment this line out to trigger the "unused annotation" inspection
-    if (basicKind == null || basicKind != Kind.Inherit) return basicKind
+    /// Make it nullable even we don't really return null,
+    /// in case we add [Inherit] annotation and want to annotate [Term]s explicitly
+    fun getKind(annotations: Array<out PsiAnnotation>): Kind? {
+      // https://github.com/JetBrains/intellij-community/blob/d18a3edba879d572a2e1581bc39ce8faaa0c565c/java/openapi/src/com/intellij/codeInsight/NullableNotNullDialog.java
+      val isClosed =
+        annotations.any { it.qualifiedName?.endsWith("Closed") == true } // FIXME: don't hard code, make a setting panel, see above
+      val isBound =
+        annotations.any { it.qualifiedName?.endsWith("Bound") == true } // FIXME: make a inspection that prevents [Closed] and [Bound] annotates the same type
 
-    // try get from type definition
-    if (ty is PsiClassType) {
-      val anno = ty.resolve()?.annotations
-      if (anno != null) {
-        val defKind = getKind(anno)
-        if (defKind != null && defKind != Kind.Inherit) return defKind
+      return when {
+        isClosed -> Kind.Closed
+        isBound -> Kind.Bound
+        else -> Kind.Inherit
       }
     }
 
-    // otherwise, try to infer the real kind
-    // this includes:
-    // * getter of record
-    // * method of some class, like Closure
-    when (expr) {
-      is PsiParenthesizedExpression -> {
-        val innerExpr = expr.expression
-        if (innerExpr != null) {
-          return getKind(innerExpr, holder)
+    fun foreplay(parameterList: PsiParameterList) {
+      for (param in parameterList.parameters) {
+        val kind = param.annotations
+        known[param.textRange] = getKind(kind)
+      }
+    }
+
+    override fun visitCodeBlock(block: PsiCodeBlock) {
+      block.statements.forEach { it.accept(this) }
+    }
+
+    override fun visitBlockStatement(statement: PsiBlockStatement) {
+      visitCodeBlock(statement.codeBlock)
+    }
+
+    override fun visitCallExpression(callExpression: PsiCallExpression) {
+      val resolved = callExpression.resolveMethod() ?: return
+      val args = callExpression.argumentList ?: return
+
+      // TODO: deal with vararg
+      val zipped = resolved.parameterList.parameters.zip(args.expressions)
+      for ((param, arg) in zipped) {
+        val kind = getKind(param.type) ?: continue
+        doInspect(kind, arg, holder, true)
+      }
+    }
+
+    override fun visitAssignmentExpression(expression: PsiAssignmentExpression) {
+      if (expression.operationTokenType != JavaTokenType.EQ) return
+
+      // just get kind, left expression is normally not complicate
+      val lExpr = expression.lExpression
+      val lKind = lExpr.type ?: return
+      val expected = getKind(lKind) ?: return
+      doInspect(expected, expression.rExpression ?: return, holder, false)
+      known[lExpr.textRange] = expected
+    }
+
+    override fun visitDeclarationStatement(statement: PsiDeclarationStatement) {
+      statement.declaredElements.forEach { e ->
+        if (e is PsiLocalVariable) {
+          val initializer = e.initializer ?: return@forEach
+          val expected = getKind(e.type) ?: return@forEach
+          doInspect(expected, initializer, holder, false)
+          known[e.textRange] = expected
+        }
+      }
+    }
+
+    override fun visitPatternVariable(variable: PsiPatternVariable) {
+      val parent = variable.parentOfTypes(PsiInstanceOfExpression::class, PsiSwitchBlock::class, withSelf = false)
+      when (parent) {
+        is PsiInstanceOfExpression -> {
+          val operadKind = getKind(parent.operand, holder)
+          if (operadKind != null && operadKind != Kind.Inherit) {
+            proposeDeleteAnnotations(variable.annotations, holder)
+          }
+          known[variable.textRange] = operadKind
+        }
+
+        is PsiSwitchBlock -> {
+          val expression = parent.expression
+          if (expression != null) {
+            val exprKind = getKind(expression, holder)
+            if (exprKind != null && exprKind != Kind.Inherit) {
+              proposeDeleteAnnotations(variable.annotations, holder)
+            }
+            known[variable.textRange] = exprKind
+          }
+        }
+      }
+    }
+
+    override fun visitSwitchStatement(statement: PsiSwitchStatement) {
+      statement.expression?.accept(this)
+      statement.body?.accept(this)
+    }
+
+    override fun visitSwitchLabeledRuleStatement(statement: PsiSwitchLabeledRuleStatement) {
+      statement.body?.accept(this)
+    }
+
+    override fun visitIfStatement(statement: PsiIfStatement) {
+      statement.condition?.accept(this)
+      statement.thenBranch?.accept(this)
+      statement.elseBranch?.accept(this)
+    }
+
+    override fun visitExpressionStatement(statement: PsiExpressionStatement) {
+      statement.expression.accept(this)
+      println("Expression stmt: ${statement.text}")
+    }
+
+    override fun visitExpressionListStatement(statement: PsiExpressionListStatement) {
+      statement.expressionList.expressions.forEach { it.accept(this) }
+    }
+
+    override fun visitConditionalExpression(expression: PsiConditionalExpression) {
+      expression.condition.accept(this)
+      expression.thenExpression?.accept(this)
+      expression.elseExpression?.accept(this)
+    }
+
+    fun doInspect(
+      expectedKind: Kind,
+      actual: PsiExpression,
+      holder: ProblemsHolder,
+      strict: Boolean
+    ) {
+      // we may assume [param] is explicitly annotated, otherwise no inspection can be performed
+      // this case mostly happens on constructor
+      val actualKind = getKind(actual, holder)
+
+      if (expectedKind == Kind.Inherit || actualKind == null || (!strict && actualKind == Kind.Inherit)) return
+
+      val cmp = expectedKind.isAssignable(actualKind)
+      if (cmp < 0) {
+        // not assignable
+        holder.registerProblem(
+          actual,
+          KalaBundle.message(
+            "kala.aya.dblity.not.assignable",
+            "'${actualKind.toAnnotationName()}'",
+            "'${expectedKind.toAnnotationName()}'"
+          ),
+          ProblemHighlightType.WARNING
+        )
+      } else if (cmp > 0) {
+        // assignable with implicit cast
+        // TODO: I want to make some highlight, but how?
+        // sorry holder
+        // FIXME: this seems invisible for some reason, this path is reachable
+        holder.registerProblem(
+          actual,
+          KalaBundle.message("kala.aya.dblity.smart.cast", expectedKind.toAnnotationName()),
+          ProblemHighlightType.INFORMATION
+        )
+      }
+    }
+
+    /**
+     * @return null if necessary information is missing, the inspection should be stopped.
+     */
+    fun getKind(expr: PsiExpression, holder: ProblemsHolder): Kind? {
+      val ty = expr.type ?: return null
+      if (ty == PsiTypes.nullType()) return null
+
+      val basicKind = getKind(ty)
+      // if [expr] is already annotated or cannot be used for inferring
+      if (basicKind == null || basicKind != Kind.Inherit) return basicKind
+
+      // try get from type definition
+      if (ty is PsiClassType) {
+        val anno = ty.resolve()?.annotations
+        if (anno != null) {
+          val defKind = getKind(anno)
+          if (defKind != null && defKind != Kind.Inherit) return defKind
         }
       }
 
-      is PsiReferenceExpression -> {
-        val def = expr.resolve() ?: return basicKind
-        if (def is PsiPatternVariable) {
-          val parent = def.parentOfTypes(PsiInstanceOfExpression::class, PsiSwitchBlock::class, withSelf = false)
-          when (parent) {
-            is PsiInstanceOfExpression -> {
-              val operadKind = getKind(parent.operand, holder)
-              if (operadKind != null && operadKind != Kind.Inherit) {
-                proposeDeleteAnnotations(def.annotations, holder)
-              }
-              return operadKind
-            }
-            is PsiSwitchBlock -> {
-              val expression = parent.expression
-              if (expression != null) {
-                val exprKind = getKind(expression, holder)
-                if (exprKind != null && exprKind != Kind.Inherit) {
-                  proposeDeleteAnnotations(def.annotations, holder)
-                }
-                return exprKind
-              }
+      // otherwise, try to infer the real kind
+      // this includes:
+      // * getter of record
+      // * method of some class, like Closure
+      when (expr) {
+        is PsiParenthesizedExpression -> {
+          val innerExpr = expr.expression
+          if (innerExpr != null) return getKind(innerExpr, holder)
+        }
+
+        is PsiReferenceExpression -> {
+          val def = expr.resolve() ?: return basicKind
+          return known[def.textRange]
+        }
+
+        is PsiMethodCallExpression -> {
+          val methodExpr = expr.methodExpression
+          val receiver = methodExpr.qualifierExpression
+
+          if (receiver != null) {
+            val receiverKind = getKind(receiver, holder)
+            if (receiverKind != null) {
+              // basicKind (the return type of [expr]) is Inherit, and we know the kind of [receiver]
+              // thus the real kind of [expr] is the kind of [receiver]
+
+              return receiverKind
             }
           }
         }
       }
 
-      is PsiMethodCallExpression -> {
-        val methodExpr = expr.methodExpression
-        val receiver = methodExpr.qualifierExpression
+      return basicKind
+    }
 
-        if (receiver != null) {
-          val receiverKind = getKind(receiver, holder)
-          if (receiverKind != null) {
-            // basicKind (the return type of [expr]) is Inherit, and we know the kind of [receiver]
-            // thus the real kind of [expr] is the kind of [receiver]
-
-            return receiverKind
-          }
-        }
+    private fun proposeDeleteAnnotations(
+      annotations: Array<out PsiAnnotation>,
+      holder: ProblemsHolder
+    ) {
+      annotations.forEach {
+        holder.registerProblem(
+          it, KalaBundle.message("kala.aya.dblity.unused.annotation"),
+          ProblemHighlightType.LIKE_UNUSED_SYMBOL, it.textRangeInParent,
+          DeleteAnnotationFix
+        )
       }
-    }
-
-    return basicKind
-  }
-
-  private fun proposeDeleteAnnotations(
-    annotations: Array<out PsiAnnotation>,
-    holder: ProblemsHolder
-  ) {
-    annotations.forEach {
-      holder.registerProblem(
-        it, KalaBundle.message("kala.aya.dblity.unused.annotation"),
-        ProblemHighlightType.LIKE_UNUSED_SYMBOL, it.textRangeInParent,
-        DeleteAnnotationFix
-      )
-    }
-  }
-
-  fun doInspect(
-    expected: PsiType,
-    actual: PsiExpression,
-    holder: ProblemsHolder,
-    session: LocalInspectionToolSession,
-    strict: Boolean
-  ) {
-    // we may assume [param] is explicitly annotated, otherwise no inspection can be performed
-    // this case mostly happens on constructor
-    val expectedKind = getKind(expected)
-    val actualKind = getKind(actual, holder)
-
-    if (expectedKind == null
-      || expectedKind == Kind.Inherit
-      || actualKind == null
-      // in strict mode, we treat `Inherit` as `Bound` at rhs
-      || (!strict && actualKind == Kind.Inherit)
-    ) return
-
-    val cmp = expectedKind.isAssignable(actualKind)
-    if (cmp < 0) {
-      // not assignable
-      holder.registerProblem(
-        actual,
-        KalaBundle.message(
-          "kala.aya.dblity.not.assignable",
-          "'${actualKind.toAnnotationName()}'",
-          "'${expectedKind.toAnnotationName()}'"
-        ),
-        ProblemHighlightType.WARNING
-      )
-    } else if (cmp > 0) {
-      // assignable with implicit cast
-      // TODO: I want to make some highlight, but how?
-      // sorry holder
-      // FIXME: this seems invisible for some reason, this path is reachable
-      holder.registerProblem(
-        actual,
-        KalaBundle.message("kala.aya.dblity.smart.cast", expectedKind.toAnnotationName()),
-        ProblemHighlightType.INFORMATION
-      )
     }
   }
 
@@ -196,40 +275,13 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     holder: ProblemsHolder,
     isOnTheFly: Boolean,
     session: LocalInspectionToolSession
-  ): PsiElementVisitor {
-    return object : JavaElementVisitor() {
-      override fun visitCallExpression(callExpression: PsiCallExpression) {
-        super.visitCallExpression(callExpression)
-        val resolved = callExpression.resolveMethod() ?: return
-        val args = callExpression.argumentList ?: return
-
-        // TODO: deal with vararg
-        val zipped = resolved.parameterList.parameters.zip(args.expressions)
-        for ((param, arg) in zipped) {
-          doInspect(param.type, arg, holder, session, true)
-        }
-      }
-
-      override fun visitAssignmentExpression(expression: PsiAssignmentExpression) {
-        super.visitAssignmentExpression(expression)
-
-        if (expression.operationTokenType != JavaTokenType.EQ) return
-
-        // just get kind, left expression is normally not complicate
-        val lKind = expression.lExpression.type ?: return
-        doInspect(lKind, expression.rExpression ?: return, holder, session, false)
-      }
-
-      override fun visitDeclarationStatement(statement: PsiDeclarationStatement) {
-        super.visitDeclarationStatement(statement)
-        statement.declaredElements.forEach { e ->
-          if (e is PsiLocalVariable) {
-            val initializer = e.initializer ?: return@forEach
-            val expected = e.type
-            doInspect(expected, initializer, holder, session, false)
-          }
-        }
-      }
+  ): PsiElementVisitor = object : JavaElementVisitor() {
+    override fun visitMethod(method: PsiMethod) {
+      super.visitMethod(method)
+      val body = method.body ?: return
+      val dfa = SequentialDFA(holder)
+      dfa.foreplay(method.parameterList)
+      body.accept(dfa)
     }
   }
 }

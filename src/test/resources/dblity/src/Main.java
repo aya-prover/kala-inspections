@@ -35,8 +35,8 @@ public class Main {
         }
 
         switch (sub) {
-            case SubTerm(@Bound var inheritSubTerm, _, _) -> {
-                acceptClosedTerm(inheritSubTerm);
+            case SubTerm(@Bound var switchInherit, _, _) -> {
+                acceptClosedTerm(switchInherit);
             }
         }
 
