@@ -189,11 +189,18 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     }
 
     override fun visitSwitchLabeledRuleStatement(statement: PsiSwitchLabeledRuleStatement) {
+      statement.caseLabelElementList?.accept(this)
       statement.caseLabelElementList?.elements?.forEach {
         if (it is PsiPattern) visitPattern(it)
       }
 
       statement.body?.accept(this)
+    }
+
+    override fun visitCaseLabelElementList(list: PsiCaseLabelElementList) {
+      list.elements.forEach {
+        it.accept(this)
+      }
     }
 
     override fun visitPattern(pattern: PsiPattern) {
