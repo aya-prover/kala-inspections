@@ -280,7 +280,8 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
 
         is PsiReferenceExpression -> {
           val def = expr.resolve() ?: return basicKind
-          // TODO: not all reference can do this, i.e. ref to Class
+          // TODO: not all reference can do this,
+          //       i.e. all reference that its not define in the method, like Class or Field
           return known[def.textRange]
         }
 
