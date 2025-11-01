@@ -22,6 +22,7 @@ public class Main {
     public record NormalTerm(Term sub0) implements Term {}
 
     public static void acceptClosedTerm(@Closed Term term) {}
+    public static void acceptClosedTerms(@Closed Term... terms) {}
 
     public static void acceptBoundTerm(@Bound Term term) {}
 
@@ -70,6 +71,8 @@ public class Main {
         // `null` is not Inherit, Bound or Closed
         acceptClosedTerm(null);
         acceptBoundTerm(null);
+
+        acceptClosedTerms(sub, null, Unit.INSTANCE, s);
     }
 
     public void inconsistent() {

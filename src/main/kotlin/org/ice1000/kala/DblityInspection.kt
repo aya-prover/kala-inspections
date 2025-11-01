@@ -20,7 +20,7 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
 
     /**
      * Check if [other] is assignable to [this], or in other words, [this] is assignable from [other]
-     * @return negative, if not assignable, positive if assignable with cast
+     * @return negative if not assignable, positive if assignable with cast
      */
     fun isAssignable(other: Kind): Int {
       val other = if (other == Inherit) Bound else other
@@ -41,21 +41,28 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     val holder: ProblemsHolder,
     val known: MutableMap<TextRange, Kind?> = mutableMapOf()
   ) : JavaElementVisitor() {
-    fun getKind(ty: PsiAnnotationOwner): Kind? = getKind(ty.annotations)
+    companion object {
+      fun getKind(ty: PsiAnnotationOwner): Kind? = getKind(ty.annotations)
 
-    /// Make it nullable even we don't really return null,
-    /// in case we add [Inherit] annotation and want to annotate [Term]s explicitly
-    fun getKind(annotations: Array<out PsiAnnotation>): Kind? {
-      // https://github.com/JetBrains/intellij-community/blob/d18a3edba879d572a2e1581bc39ce8faaa0c565c/java/openapi/src/com/intellij/codeInsight/NullableNotNullDialog.java
-      val isClosed =
-        annotations.any { it.qualifiedName?.endsWith("Closed") == true } // FIXME: don't hard code, make a setting panel, see above
-      val isBound =
-        annotations.any { it.qualifiedName?.endsWith("Bound") == true } // FIXME: make a inspection that prevents [Closed] and [Bound] annotates the same type
+      fun getKind(annotations: Array<out PsiAnnotation>): Kind? {
+        // https://github.com/JetBrains/intellij-community/blob/d18a3edba879d572a2e1581bc39ce8faaa0c565c/java/openapi/src/com/intellij/codeInsight/NullableNotNullDialog.java
+        val isClosed =
+          annotations.any { it.qualifiedName?.endsWith("Closed") == true } // FIXME: don't hard code, make a setting panel, see above
+        val isBound =
+          annotations.any { it.qualifiedName?.endsWith("Bound") == true } // FIXME: make a inspection that prevents [Closed] and [Bound] annotates the same type
+        val isNoInherit =
+          annotations.any { it.qualifiedName?.endsWith("NoInherit") == true }
 
-      return when {
-        isClosed -> Kind.Closed
-        isBound -> Kind.Bound
-        else -> Kind.Inherit
+        // When a method is annotated with `NoInherit`, that means the method cannot infer the db-lity of its return type from the receiver.
+        // such as the db-lity is depends on its parameters which have complex db-lity, such as `ImmutableSeq<Term>`.
+        // For example, `Term#instantiate`
+        if (isNoInherit) return null
+
+        return when {
+          isClosed -> Kind.Closed
+          isBound -> Kind.Bound
+          else -> Kind.Inherit
+        }
       }
     }
 
@@ -75,17 +82,32 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     }
 
     override fun visitCallExpression(callExpression: PsiCallExpression) {
-      val resolved = callExpression.resolveMethod() ?: return
-      val args = callExpression.argumentList ?: return
+      val params = callExpression.resolveMethod()?.parameterList?.parameters ?: return
+      val args = callExpression.argumentList?.expressions ?: return
 
       // TODO: deal with vararg
-      val zipped = resolved.parameterList.parameters.zip(args.expressions)
-      for ((param, arg) in zipped) {
-        val kind = getKind(param.type)
-        if (kind != null) {
-          doInspect(kind, getKind(arg), arg, holder, true)
+      if (params.size <= args.size) {
+        // note that param.isVarArgs iff.not param == params.last()
+        var param: PsiParameter? = null
+
+        args.forEachIndexed { idx, arg ->
+          if (param == null || !param.isVarArgs) {
+            param = params[idx]
+          }
+
+          var type = param.type
+
+          if (param.isVarArgs && type is PsiEllipsisType) {
+            type = type.componentType
+          }
+
+          val kind = getKind(type)
+          if (kind != null) {
+            doInspect(kind, getKind(arg), arg, holder, true)
+          }
         }
       }
+
     }
 
     override fun visitAssignmentExpression(expression: PsiAssignmentExpression) {
@@ -188,6 +210,10 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       expression.elseExpression?.accept(this)
     }
 
+    /**
+     * Check if [actualKind] is assignable to [expectedKind].
+     * @param strict true if treat [Kind.Inherit] as [Kind.Bound] at rhs (actualKind).
+     */
     fun doInspect(
       expectedKind: Kind,
       actualKind: Kind?,
@@ -254,6 +280,7 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
 
         is PsiReferenceExpression -> {
           val def = expr.resolve() ?: return basicKind
+          // TODO: not all reference can do this, i.e. ref to Class
           return known[def.textRange]
         }
 
