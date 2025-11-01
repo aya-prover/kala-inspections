@@ -42,6 +42,9 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     val known: MutableMap<TextRange, Kind?> = mutableMapOf()
   ) : JavaElementVisitor() {
     companion object {
+      /**
+       * DO NOT use this on rhs, as rhs can have [PsiTypes.nullType], see [DblityInspection.SequentialDFA.getKind]
+       */
       fun getKind(ty: PsiAnnotationOwner): Kind? = getKind(ty.annotations)
 
       fun getKind(annotations: Array<out PsiAnnotation>): Kind? {
@@ -186,7 +189,28 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     }
 
     override fun visitSwitchLabeledRuleStatement(statement: PsiSwitchLabeledRuleStatement) {
+      statement.caseLabelElementList?.elements?.forEach {
+        if (it is PsiPattern) visitPattern(it)
+      }
+
       statement.body?.accept(this)
+    }
+
+    override fun visitPattern(pattern: PsiPattern) {
+      // dont call visitTypeTestPattern(), visitPattern is considered a fallback of visitTypeTestPattern
+      when (pattern) {
+        is PsiTypeTestPattern -> {
+          visitPatternVariable(pattern.patternVariable ?: return)
+        }
+
+        is PsiDeconstructionPattern -> {
+          val subpatterns = pattern.deconstructionList.deconstructionComponents
+          subpatterns.forEach(this::visitPattern)
+        }
+
+        // UnnamedPattern, we don't care
+        else -> {}
+      }
     }
 
     override fun visitIfStatement(statement: PsiIfStatement) {
@@ -282,7 +306,22 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
           val def = expr.resolve() ?: return basicKind
           // TODO: not all reference can do this,
           //       i.e. all reference that its not define in the method, like Class or Field
-          return known[def.textRange]
+          val resolved = known[def.textRange]
+          if (resolved != null) return resolved
+
+          // figure out why null
+          val ty = expr.type
+          if (ty != null) {
+            // then the def is not visited by dfa
+            val kind = getKind(ty)
+            if (kind != null) return kind
+          }
+
+          // ty == null || kind == null, then `expr` is either:
+          // * some thing which has no type, such as Class,
+          // * or some thing which type is unknown cause by syntax error
+          // * or marked with NoInherit
+          // fall though
         }
 
         is PsiMethodCallExpression -> {

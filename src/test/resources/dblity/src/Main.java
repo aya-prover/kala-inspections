@@ -1,7 +1,11 @@
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
-    public sealed interface Term {}
+    public sealed interface Term {
+        default @NoInherit Term inst() {
+            return null;
+        }
+    }
 
     public enum Unit implements Term { INSTANCE }
 
@@ -64,7 +68,7 @@ public class Main {
         @Closed int ii = sub.integer();
 
         // AnnotatedTerm is annotated as Bound, thus any expression with type AnnotatedTerm is considered Bound
-        @Closed Term s = new AnnotatedTerm(null);
+        @Closed Term closed = new AnnotatedTerm(null);
         AnnotatedTerm ss = new AnnotatedTerm(null);
         acceptClosedTerm(ss);
 
@@ -72,7 +76,12 @@ public class Main {
         acceptClosedTerm(null);
         acceptBoundTerm(null);
 
-        acceptClosedTerms(sub, null, Unit.INSTANCE, s);
+        // vararg case
+        acceptClosedTerms(sub, null, Unit.INSTANCE, closed);
+
+        // `inst` is marked with `NoInherit`, which cause the inspection on such method call is disabled
+        // in this case, the user should check the dblity
+        closed = sub.inst();
     }
 
     public void inconsistent() {
