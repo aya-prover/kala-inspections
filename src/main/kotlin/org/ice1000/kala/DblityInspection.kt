@@ -41,32 +41,44 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     val holder: ProblemsHolder,
     val known: MutableMap<TextRange, Kind?> = mutableMapOf()
   ) : JavaElementVisitor() {
-    companion object {
-      /**
-       * DO NOT use this on rhs, as rhs can have [PsiTypes.nullType], see [DblityInspection.SequentialDFA.getKind]
-       */
-      fun getKind(ty: PsiAnnotationOwner): Kind? = getKind(ty.annotations)
+    /**
+     * DO NOT use this on rhs, as rhs can have [PsiTypes.nullType], see [DblityInspection.SequentialDFA.getKind]
+     */
+    fun getKind(ty: PsiAnnotationOwner): Kind? = getKind(ty.annotations)
 
-      fun getKind(annotations: Array<out PsiAnnotation>): Kind? {
-        // https://github.com/JetBrains/intellij-community/blob/d18a3edba879d572a2e1581bc39ce8faaa0c565c/java/openapi/src/com/intellij/codeInsight/NullableNotNullDialog.java
-        val isClosed =
-          annotations.any { it.qualifiedName?.endsWith("Closed") == true } // FIXME: don't hard code, make a setting panel, see above
-        val isBound =
-          annotations.any { it.qualifiedName?.endsWith("Bound") == true } // FIXME: make a inspection that prevents [Closed] and [Bound] annotates the same type
-        val isNoInherit =
-          annotations.any { it.qualifiedName?.endsWith("NoInherit") == true }
+    fun getKind(annotations: Array<out PsiAnnotation>): Kind? {
+      // https://github.com/JetBrains/intellij-community/blob/d18a3edba879d572a2e1581bc39ce8faaa0c565c/java/openapi/src/com/intellij/codeInsight/NullableNotNullDialog.java
+      // FIXME: don't hard code, make a setting panel, see above
+      val isClosed = annotations.find { it.qualifiedName?.endsWith("Closed") == true }
+      val isBound = annotations.find { it.qualifiedName?.endsWith("Bound") == true }
+      val isNoInherit = annotations.find { it.qualifiedName?.endsWith("NoInherit") == true }
 
-        // When a method is annotated with `NoInherit`, that means the method cannot infer the db-lity of its return type from the receiver.
-        // such as the db-lity is depends on its parameters which have complex db-lity, such as `ImmutableSeq<Term>`.
-        // For example, `Term#instantiate`
+      // When a method is annotated with `NoInherit`, the method cannot infer the db-lity of its return type from the receiver.
+      // This can happen when the db-lity depends on its parameters which have complex db-lity, such as `ImmutableSeq<Term>`.
+      // For example, `Term#instantiate`
 
-        return when {
-          isNoInherit -> null
-          isClosed -> Kind.Closed
-          isBound -> Kind.Bound
-          else -> Kind.Inherit
-        }
+      if (isNoInherit != null) {
+        if (isClosed != null) conflictAnnotation(isClosed)
+        if (isBound != null) conflictAnnotation(isBound)
       }
+      if (isClosed != null && isBound != null) {
+        conflictAnnotation(isBound)
+      }
+
+      return when {
+        isNoInherit != null -> null
+        isClosed != null -> Kind.Closed
+        isBound != null -> Kind.Bound
+        else -> Kind.Inherit
+      }
+    }
+
+    private fun conflictAnnotation(isBound: PsiAnnotation) {
+      holder.registerProblem(
+        isBound,
+        KalaBundle.message("kala.aya.dblity.conflict.annotation"),
+        ProblemHighlightType.GENERIC_ERROR
+      )
     }
 
     fun foreplay(parameterList: PsiParameterList) {
@@ -202,6 +214,7 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       }
     }
 
+    @Suppress("UnstableApiUsage")
     override fun visitPattern(pattern: PsiPattern) {
       // dont call visitTypeTestPattern(), visitPattern is considered a fallback of visitTypeTestPattern
       when (pattern) {
