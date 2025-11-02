@@ -4,6 +4,7 @@ import com.intellij.codeInspection.*
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.*
+import com.intellij.psi.util.parentOfType
 import com.intellij.psi.util.parentOfTypes
 import org.jetbrains.annotations.Nls
 
@@ -181,19 +182,38 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
           known[variable.textRange] = operadKind
         }
 
+        // TODO: handle the `x`, `y` patterns in the following code:
+        //  switch(new Pair(a, b)) { case Pair(x, y) -> ... }
         is PsiSwitchBlock -> {
-          val expression = parent.expression
-          if (expression != null) {
-            var exprKind = getKind(expression)
-            // the expr has annotation, ignore the pattern annotation
-            if (exprKind.canSuggestDelete()) {
-              proposeDeleteAnnotations(variable.annotations, holder)
-            } else {
-              // the expr does not have annotation, use the pattern annotation
-              exprKind = getKind(variable.annotations)
+          // See if there's an annotation on the record component
+          var exprKind: Kind? = null
+          // Ideally, instead of calling `parentOfType`, we should pass in these information when visiting the switch block
+          // so we only compute the type once, and the indices can also be passed in directly, instead of having to
+          // count using `indexOf`.
+          val parentDecon = variable.parentOfType<PsiDeconstructionPattern>()
+          if (parentDecon != null) {
+            val index = parentDecon.deconstructionList.deconstructionComponents.indexOf(variable.pattern)
+            val recordType = parentDecon.typeElement?.type as? PsiClassType
+            val recordClass = recordType?.resolve()
+            val components = recordClass?.recordComponents
+            if (components != null && index in components.indices) {
+              val component = components[index]
+              exprKind = getKind(component.annotations)
             }
-            known[variable.textRange] = exprKind
           }
+          val expression = parent.expression
+          if (exprKind == null && expression != null) {
+            exprKind = getKind(expression)
+          }
+
+          // the expr has annotation, ignore the pattern annotation
+          if (exprKind.canSuggestDelete()) {
+            proposeDeleteAnnotations(variable.annotations, holder)
+          } else {
+            // the expr does not have annotation, use the pattern annotation
+            exprKind = getKind(variable.annotations)
+          }
+          known[variable.textRange] = exprKind
         }
       }
     }
