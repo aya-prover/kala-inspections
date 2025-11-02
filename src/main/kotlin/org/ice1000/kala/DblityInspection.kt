@@ -13,6 +13,8 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
   override fun isEnabledByDefault() = true
   override fun getGroupDisplayName() = KalaBundle.message("kala.aya.group.name")
 
+  // Inherit is an intermediate kind meaning that you should replace it with
+  // some other kind inferred from exprs or whatever
   enum class Kind {
     Inherit, Bound, Closed;
 
@@ -110,7 +112,6 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       val params = callExpression.resolveMethod()?.parameterList?.parameters ?: return
       val args = callExpression.argumentList?.expressions ?: return
 
-      // TODO: deal with vararg
       if (params.size <= args.size) {
         // note that param.isVarArgs iff.not param == params.last()
         var param: PsiParameter? = null
@@ -145,13 +146,6 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       if (expected != null) {
         val rhs = expression.rExpression ?: return
         val actualKind = getKind(rhs)
-
-        if (lExpr is PsiReferenceExpression && lExpr.resolve() is PsiLocalVariable) {
-          known[lExpr.textRange] = expected
-          if (expected != Kind.Inherit && expected == actualKind) {
-            proposeDeleteAnnotations(lKind.annotations, holder)
-          }
-        }
         doInspect(expected, actualKind, rhs, holder, false)
       }
     }
@@ -163,8 +157,8 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
           val expected = getKind(e.annotations)
           if (expected != null) {
             val actualKind = getKind(initializer)
-            known[e.textRange] = expected
-            if (expected == actualKind) {
+            known[e.textRange] = if (expected == Kind.Inherit) actualKind else expected
+            if (expected != Kind.Inherit && expected == actualKind) {
               proposeDeleteAnnotations(e.annotations, holder)
             }
             doInspect(expected, actualKind, initializer, holder, false)
