@@ -45,7 +45,7 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
   ) : JavaElementVisitor() {
     @OptIn(ExperimentalContracts::class)
     fun Kind?.eitherBoundOrClosed(): Boolean {
-      contract @ {
+      contract {
         returns(true) implies (this@eitherBoundOrClosed != null)
       }
       return this == Kind.Bound || this == Kind.Closed
@@ -145,10 +145,12 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       if (expected != null) {
         val rhs = expression.rExpression ?: return
         val actualKind = getKind(rhs)
-        // TODO: perhaps we should not infer variable that is not defined in this method
-        known[lExpr.textRange] = expected
-        if (expected != Kind.Inherit && expected == actualKind) {
-          proposeDeleteAnnotations(lKind.annotations, holder)
+
+        if (lExpr is PsiReferenceExpression && lExpr.resolve() is PsiLocalVariable) {
+          known[lExpr.textRange] = expected
+          if (expected != Kind.Inherit && expected == actualKind) {
+            proposeDeleteAnnotations(lKind.annotations, holder)
+          }
         }
         doInspect(expected, actualKind, rhs, holder, false)
       }

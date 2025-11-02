@@ -92,7 +92,7 @@ public class Main {
 
     public void inconsistent() {
         @Closed int i = 0;
-        var j = i;
+        var  j = i;
         // `j` is considered a `@Closed int`
         acceptClosedInt(j);
 
@@ -106,7 +106,6 @@ public class Main {
         switch (term) {
             case AnnotatedTerm annotatedTerm -> {
                 // class annotation has higher priority
-                // TODO: in fact, we should report a warn in this case
                 acceptClosedTerm(annotatedTerm);
             }
             case NormalTerm normalTerm -> {
@@ -119,5 +118,14 @@ public class Main {
             }
             case Unit unit -> {}
         }
+    }
+
+    class WithFields {
+        @Closed Term x;
+    }
+
+    public void testFields() {
+        WithFields withFields = new WithFields();
+        withFields.x = Unit.INSTANCE;
     }
 }
