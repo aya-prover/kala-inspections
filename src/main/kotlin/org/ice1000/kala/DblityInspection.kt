@@ -59,9 +59,9 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
         // When a method is annotated with `NoInherit`, that means the method cannot infer the db-lity of its return type from the receiver.
         // such as the db-lity is depends on its parameters which have complex db-lity, such as `ImmutableSeq<Term>`.
         // For example, `Term#instantiate`
-        if (isNoInherit) return null
 
         return when {
+          isNoInherit -> null
           isClosed -> Kind.Closed
           isBound -> Kind.Bound
           else -> Kind.Inherit
@@ -191,16 +191,14 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
 
     override fun visitSwitchLabeledRuleStatement(statement: PsiSwitchLabeledRuleStatement) {
       statement.caseLabelElementList?.accept(this)
-      statement.caseLabelElementList?.elements?.forEach {
-        if (it is PsiPattern) visitPattern(it)
-      }
-
       statement.body?.accept(this)
     }
 
     override fun visitCaseLabelElementList(list: PsiCaseLabelElementList) {
       list.elements.forEach {
-        it.accept(this)
+        // This should be equivalent to it.accept(this)
+        if (it is PsiPattern) visitPattern(it)
+        else it.accept(this)
       }
     }
 
