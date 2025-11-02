@@ -45,7 +45,7 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
   ) : JavaElementVisitor() {
     @OptIn(ExperimentalContracts::class)
     fun Kind?.eitherBoundOrClosed(): Boolean {
-      contract {
+      contract @ {
         returns(true) implies (this@eitherBoundOrClosed != null)
       }
       return this == Kind.Bound || this == Kind.Closed
@@ -192,6 +192,7 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       if (index >= 0) {
         val parentDecon = variable.parentOfType<PsiDeconstructionPattern>()
         if (parentDecon != null) {
+          // handle `case SomeRecord(var aaa, ...)` case
           val recordType = parentDecon.typeElement.type as? PsiClassType
           val recordClass = recordType?.resolve()
           val components = recordClass?.recordComponents
