@@ -123,8 +123,9 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       if (expected != null) {
         val rhs = expression.rExpression ?: return
         val actualKind = getKind(rhs)
+        // TODO: perhaps we should not infer variable that is not defined in this method
         known[lExpr.textRange] = expected
-        if (expected == actualKind) {
+        if (expected != Kind.Inherit && expected == actualKind) {
           proposeDeleteAnnotations(lKind.annotations, holder)
         }
         doInspect(expected, actualKind, rhs, holder, false)
