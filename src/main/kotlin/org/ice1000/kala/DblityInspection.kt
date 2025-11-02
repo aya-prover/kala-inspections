@@ -41,6 +41,10 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     val holder: ProblemsHolder,
     val known: MutableMap<TextRange, Kind?> = mutableMapOf()
   ) : JavaElementVisitor() {
+    fun Kind?.canSuggestDelete(): Boolean {
+      return this == Kind.Bound || this == Kind.Closed
+    }
+
     /**
      * DO NOT use this on rhs, as rhs can have [PsiTypes.nullType], see [DblityInspection.SequentialDFA.getKind]
      */
@@ -161,13 +165,18 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       }
     }
 
+    // Assumption: patterns always inherit from the projection methods
     override fun visitPatternVariable(variable: PsiPatternVariable) {
       val parent = variable.parentOfTypes(PsiInstanceOfExpression::class, PsiSwitchBlock::class, withSelf = false)
       when (parent) {
         is PsiInstanceOfExpression -> {
-          val operadKind = getKind(parent.operand)
-          if (operadKind != null && operadKind != Kind.Inherit) {
+          var operadKind = getKind(parent.operand)
+          // the expr has annotation, ignore the pattern annotation
+          if (operadKind.canSuggestDelete()) {
             proposeDeleteAnnotations(variable.annotations, holder)
+          } else {
+            // the expr does not have annotation, use the pattern annotation
+            operadKind = getKind(variable.annotations)
           }
           known[variable.textRange] = operadKind
         }
@@ -175,9 +184,13 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
         is PsiSwitchBlock -> {
           val expression = parent.expression
           if (expression != null) {
-            val exprKind = getKind(expression)
-            if (exprKind != null && exprKind != Kind.Inherit) {
+            var exprKind = getKind(expression)
+            // the expr has annotation, ignore the pattern annotation
+            if (exprKind.canSuggestDelete()) {
               proposeDeleteAnnotations(variable.annotations, holder)
+            } else {
+              // the expr does not have annotation, use the pattern annotation
+              exprKind = getKind(variable.annotations)
             }
             known[variable.textRange] = exprKind
           }
@@ -240,7 +253,6 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
 
     override fun visitExpressionStatement(statement: PsiExpressionStatement) {
       statement.expression.accept(this)
-      println("Expression stmt: ${statement.text}")
     }
 
     override fun visitExpressionListStatement(statement: PsiExpressionListStatement) {

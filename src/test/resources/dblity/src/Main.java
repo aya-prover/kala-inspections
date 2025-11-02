@@ -34,14 +34,25 @@ public class Main {
 
     public void testSubterm(@Bound SubTerm sub) {
         if (sub instanceof SubTerm(var ifInstanceofInherit, _, _)) {
+            // warning, in theory this should be inferred as @Bound, but currently it's @Inherit
             acceptClosedTerm(ifInstanceofInherit);
 
+            // ok
             acceptBoundTerm(ifInstanceofInherit);
         }
 
         switch (sub) {
+            // unused warning about @Bound
             case SubTerm(@Bound var switchInherit, _, _) -> {
+                // warning
                 acceptClosedTerm(switchInherit);
+            }
+        }
+
+        switch (sub) {
+            case SubTerm(_, var switchOverwritten, _) -> {
+                // ok
+                acceptClosedTerm(switchOverwritten);
             }
         }
 
