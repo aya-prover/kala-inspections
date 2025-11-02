@@ -43,14 +43,9 @@ public class Main {
 
         switch (sub) {
             // unused warning about @Bound
-            case SubTerm(@Bound var switchInherit, _, _) -> {
+            case SubTerm(@Bound var switchInherit, var switchOverwritten, _) when true -> {
                 // warning
                 acceptClosedTerm(switchInherit);
-            }
-        }
-
-        switch (sub) {
-            case SubTerm(_, var switchOverwritten, _) -> {
                 // ok
                 acceptClosedTerm(switchOverwritten);
             }

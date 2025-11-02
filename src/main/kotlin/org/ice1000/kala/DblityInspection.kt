@@ -5,8 +5,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.*
 import com.intellij.psi.util.parentOfType
-import com.intellij.psi.util.parentOfTypes
 import org.jetbrains.annotations.Nls
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.contract
 
 class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
   override fun isEnabledByDefault() = true
@@ -42,7 +43,11 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     val holder: ProblemsHolder,
     val known: MutableMap<TextRange, Kind?> = mutableMapOf()
   ) : JavaElementVisitor() {
-    fun Kind?.canSuggestDelete(): Boolean {
+    @OptIn(ExperimentalContracts::class)
+    fun Kind?.eitherBoundOrClosed(): Boolean {
+      contract {
+        returns(true) implies (this@eitherBoundOrClosed != null)
+      }
       return this == Kind.Bound || this == Kind.Closed
     }
 
@@ -166,56 +171,48 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       }
     }
 
-    // Assumption: patterns always inherit from the projection methods
+    override fun visitInstanceOfExpression(expression: PsiInstanceOfExpression) {
+      val expr = expression.operand
+      expr.accept(this)
+
+      val pattern = expression.pattern
+      if (pattern != null) {
+        visitPattern(pattern, 0, expr)
+      }
+    }
+
     override fun visitPatternVariable(variable: PsiPatternVariable) {
-      val parent = variable.parentOfTypes(PsiInstanceOfExpression::class, PsiSwitchBlock::class, withSelf = false)
-      when (parent) {
-        is PsiInstanceOfExpression -> {
-          var operadKind = getKind(parent.operand)
-          // the expr has annotation, ignore the pattern annotation
-          if (operadKind.canSuggestDelete()) {
-            proposeDeleteAnnotations(variable.annotations, holder)
-          } else {
-            // the expr does not have annotation, use the pattern annotation
-            operadKind = getKind(variable.annotations)
-          }
-          known[variable.textRange] = operadKind
-        }
+      visitPatternVariable(variable, -1, null)
+    }
 
-        // TODO: handle the `x`, `y` patterns in the following code:
-        //  switch(new Pair(a, b)) { case Pair(x, y) -> ... }
-        is PsiSwitchBlock -> {
-          // See if there's an annotation on the record component
-          var exprKind: Kind? = null
-          // Ideally, instead of calling `parentOfType`, we should pass in these information when visiting the switch block
-          // so we only compute the type once, and the indices can also be passed in directly, instead of having to
-          // count using `indexOf`.
-          val parentDecon = variable.parentOfType<PsiDeconstructionPattern>()
-          if (parentDecon != null) {
-            val index = parentDecon.deconstructionList.deconstructionComponents.indexOf(variable.pattern)
-            val recordType = parentDecon.typeElement?.type as? PsiClassType
-            val recordClass = recordType?.resolve()
-            val components = recordClass?.recordComponents
-            if (components != null && index in components.indices) {
-              val component = components[index]
-              exprKind = getKind(component.annotations)
-            }
+    // Assumption: patterns always inherit from the projection methods
+    fun visitPatternVariable(variable: PsiPatternVariable, index: Int, expression: PsiExpression?) {
+      // See if there's an annotation on the record component
+      var exprKind: Kind? = null
+      if (index >= 0) {
+        val parentDecon = variable.parentOfType<PsiDeconstructionPattern>()
+        if (parentDecon != null) {
+          val recordType = parentDecon.typeElement.type as? PsiClassType
+          val recordClass = recordType?.resolve()
+          val components = recordClass?.recordComponents
+          if (components != null && index in components.indices) {
+            val component = components[index]
+            exprKind = getKind(component.annotations)
           }
-          val expression = parent.expression
-          if (exprKind == null && expression != null) {
-            exprKind = getKind(expression)
-          }
-
-          // the expr has annotation, ignore the pattern annotation
-          if (exprKind.canSuggestDelete()) {
-            proposeDeleteAnnotations(variable.annotations, holder)
-          } else {
-            // the expr does not have annotation, use the pattern annotation
-            exprKind = getKind(variable.annotations)
-          }
-          known[variable.textRange] = exprKind
         }
       }
+      if (!exprKind.eitherBoundOrClosed() && expression != null) {
+        exprKind = getKind(expression)
+      }
+
+      // the expr has annotation, ignore the pattern annotation
+      if (exprKind.eitherBoundOrClosed()) {
+        proposeDeleteAnnotations(variable.annotations, holder)
+      } else {
+        // the expr does not have annotation, use the pattern annotation
+        exprKind = getKind(variable.annotations)
+      }
+      known[variable.textRange] = exprKind
     }
 
     override fun visitSwitchStatement(statement: PsiSwitchStatement) {
@@ -230,34 +227,65 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       val expression = sw.expression
       expression?.accept(this)
       sw.body?.statements?.forEach {
-        it.accept(this)
-      }
-    }
-
-    override fun visitSwitchLabeledRuleStatement(statement: PsiSwitchLabeledRuleStatement) {
-      statement.caseLabelElementList?.accept(this)
-      statement.body?.accept(this)
-    }
-
-    override fun visitCaseLabelElementList(list: PsiCaseLabelElementList) {
-      list.elements.forEach {
-        // This should be equivalent to it.accept(this)
-        if (it is PsiPattern) visitPattern(it)
+        if (it is PsiSwitchLabeledRuleStatement) visitSwitchLabeledRuleStatement(it, expression)
         else it.accept(this)
       }
     }
 
-    @Suppress("UnstableApiUsage")
+    override fun visitSwitchLabeledRuleStatement(statement: PsiSwitchLabeledRuleStatement) {
+      visitSwitchLabeledRuleStatement(statement, null)
+    }
+
+    fun visitSwitchLabeledRuleStatement(statement: PsiSwitchLabeledRuleStatement, expression: PsiExpression?) {
+      val elementList = statement.caseLabelElementList
+      if (elementList != null) {
+        visitCaseLabelElementList(elementList, expression)
+      }
+      statement.body?.accept(this)
+    }
+
+    override fun visitCaseLabelElementList(list: PsiCaseLabelElementList) {
+      visitCaseLabelElementList(list, null)
+    }
+
+    fun visitCaseLabelElementList(list: PsiCaseLabelElementList, expression: PsiExpression?) {
+      // The elements is usually singleton
+      list.elements.forEach {
+        if (it is PsiPattern) visitPattern(it, 0, expression)
+        else it.accept(this)
+      }
+    }
+
     override fun visitPattern(pattern: PsiPattern) {
+      visitPattern(pattern, -1, null)
+    }
+
+    @Suppress("UnstableApiUsage")
+    fun visitPattern(pattern: PsiPattern, index: Int, expression: PsiExpression?) {
       // dont call visitTypeTestPattern(), visitPattern is considered a fallback of visitTypeTestPattern
       when (pattern) {
         is PsiTypeTestPattern -> {
-          visitPatternVariable(pattern.patternVariable ?: return)
+          val variable = pattern.patternVariable
+          if (variable != null) {
+            visitPatternVariable(variable, index, expression)
+          }
         }
 
         is PsiDeconstructionPattern -> {
           val subpatterns = pattern.deconstructionList.deconstructionComponents
-          subpatterns.forEach(this::visitPattern)
+          if (expression is PsiNewExpression) {
+            val args = expression.argumentList
+            if (args != null) {
+              args.expressions.forEachIndexed { index, argExpr ->
+                val subpattern = subpatterns.getOrNull(index) ?: return@forEachIndexed
+                visitPattern(subpattern, index, argExpr)
+              }
+              return
+            }
+          }
+          subpatterns.forEachIndexed { index, pattern ->
+            visitPattern(pattern, index, expression)
+          }
         }
 
         // UnnamedPattern, we don't care
