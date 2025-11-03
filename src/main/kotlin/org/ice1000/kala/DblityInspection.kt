@@ -155,8 +155,11 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
         if (e is PsiLocalVariable) {
           val initializer = e.initializer ?: return@forEach
           val expected = getKind(e.annotations)
+
           if (expected != null) {
+            initializer.accept(this)
             val actualKind = getKind(initializer)
+
             known[e.textRange] = if (expected == Kind.Inherit) actualKind else expected
             if (expected != Kind.Inherit && expected == actualKind) {
               proposeDeleteAnnotations(e.annotations, holder)

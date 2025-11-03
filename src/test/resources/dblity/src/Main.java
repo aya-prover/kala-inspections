@@ -61,21 +61,20 @@ public class Main {
         // ok, closed term can be used as bound term
         acceptBoundTerm(sub.closedSubTerm());
 
-        // this work cause `i` is inherit, NOT cause `i` is inferred to `Bound`
+        // `i` is inferred to `Bound`
         var i = sub.inheritSubTerm();
         acceptClosedTerm(i);
-        // ok, `Inherit` is treated as `Bound` at rhs
-        acceptBoundTerm(i);
 
-        // ok, even `i` is `Inherit`, this is the only way to cast an `Inherit` to `Closed`
+        // cannot assign bound to closed
         @Closed Term j = i;
 
-        // the return type of any method will inherit the db-closeness from the receiver, even types don't match
+        // the return type of any method will inherit the db-closeness from the receiver
         @Closed int ii = sub.integer();
 
         // AnnotatedTerm is annotated as Bound, thus any expression with type AnnotatedTerm is considered Bound
         @Closed Term closed = new AnnotatedTerm(null);
         AnnotatedTerm ss = new AnnotatedTerm(null);
+        // warning
         acceptClosedTerm(ss);
 
         // `null` is not Inherit, Bound or Closed
@@ -85,9 +84,13 @@ public class Main {
         // vararg case
         acceptClosedTerms(sub, null, Unit.INSTANCE, closed);
 
-        // `inst` is marked with `NoInherit`, which cause the inspection on such method call is disabled
+        // `inst` is marked with `NoInherit`, which silences the inspection on such method calls
         // in this case, the user should check the dblity
         closed = sub.inst();
+    }
+
+    public @Closed Term returnClosed() {
+        throw new UnsupportedOperationException();
     }
 
     public void inconsistent() {
@@ -100,6 +103,9 @@ public class Main {
         var l = k;
         // `l` is considered a `Term`, `@Closed` is lost.
         acceptClosedTerm(l);
+
+        // unused warning
+        @Closed var term = returnClosed();
     }
 
     public void switchCase(@Closed Term term) {
