@@ -244,6 +244,7 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       if (elementList != null) {
         visitCaseLabelElementList(elementList, expression)
       }
+      statement.guardExpression?.accept(this)
       statement.body?.accept(this)
     }
 
@@ -328,6 +329,10 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       expression.rOperand?.accept(this)
     }
 
+    override fun visitPolyadicExpression(expression: PsiPolyadicExpression) {
+      expression.operands.forEach { it.accept(this) }
+    }
+
     override fun visitParenthesizedExpression(expression: PsiParenthesizedExpression) {
       expression.expression?.accept(this)
     }
@@ -348,6 +353,8 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
 
     /**
      * Check if [actualKind] is assignable to [expectedKind].
+     * Kind priority: `Closed/Bound on class > Closed/Bound on method return type > Closed/Bound on receiver`
+     *
      * @param strict true if treat [Kind.Inherit] as [Kind.Bound] at rhs (actualKind).
      */
     fun doInspect(
