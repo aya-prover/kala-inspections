@@ -137,6 +137,8 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     }
 
     override fun visitAssignmentExpression(expression: PsiAssignmentExpression) {
+      expression.rExpression?.accept(this)
+
       if (expression.operationTokenType != JavaTokenType.EQ) return
 
       // just get kind, left expression is normally not complicate
@@ -154,10 +156,11 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       statement.declaredElements.forEach { e ->
         if (e is PsiLocalVariable) {
           val initializer = e.initializer ?: return@forEach
+          initializer.accept(this)
+
           val expected = getKind(e.annotations)
 
           if (expected != null) {
-            initializer.accept(this)
             val actualKind = getKind(initializer)
 
             known[e.textRange] = if (expected == Kind.Inherit) actualKind else expected
@@ -303,6 +306,36 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       statement.expression.accept(this)
     }
 
+    override fun visitReturnStatement(statement: PsiReturnStatement) {
+      statement.returnValue?.accept(this)
+    }
+
+    override fun visitForStatement(statement: PsiForStatement) {
+      statement.initialization?.accept(this)
+      statement.condition?.accept(this)
+      statement.update?.accept(this)
+      statement.body?.accept(this)
+    }
+
+    override fun visitForeachStatement(statement: PsiForeachStatement) {
+      // TODO: treat this as an assignment
+      statement.iteratedValue?.accept(this)
+      statement.body?.accept(this)
+    }
+
+    override fun visitBinaryExpression(expression: PsiBinaryExpression) {
+      expression.lOperand.accept(this)
+      expression.rOperand?.accept(this)
+    }
+
+    override fun visitParenthesizedExpression(expression: PsiParenthesizedExpression) {
+      expression.expression?.accept(this)
+    }
+
+    override fun visitUnaryExpression(expression: PsiUnaryExpression) {
+      expression.operand?.accept(this)
+    }
+
     override fun visitExpressionListStatement(statement: PsiExpressionListStatement) {
       statement.expressionList.expressions.forEach { it.accept(this) }
     }
@@ -416,6 +449,12 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
               return receiverKind
             }
           }
+        }
+
+        is PsiTypeCastExpression -> {
+          // TODO: check cast type? right now we don't cast dblity in the Aya codebase
+          val operand = expr.operand
+          if (operand != null) return getKind(operand)
         }
       }
 
