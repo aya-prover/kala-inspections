@@ -235,6 +235,14 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       }
     }
 
+    override fun visitYieldStatement(statement: PsiYieldStatement) {
+      statement.expression?.accept(this)
+    }
+
+    override fun visitLambdaExpression(expression: PsiLambdaExpression) {
+      expression.body?.accept(this)
+    }
+
     override fun visitSwitchLabeledRuleStatement(statement: PsiSwitchLabeledRuleStatement) {
       visitSwitchLabeledRuleStatement(statement, null)
     }
