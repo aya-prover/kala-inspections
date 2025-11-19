@@ -109,8 +109,10 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
     }
 
     override fun visitCallExpression(callExpression: PsiCallExpression) {
-      val params = callExpression.resolveMethod()?.parameterList?.parameters ?: return
       val args = callExpression.argumentList?.expressions ?: return
+      args.forEach { it.accept(this) }
+
+      val params = callExpression.resolveMethod()?.parameterList?.parameters ?: return
 
       if (params.size <= args.size) {
         // note that param.isVarArgs iff.not param == params.last()

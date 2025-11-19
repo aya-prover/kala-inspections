@@ -1,5 +1,10 @@
+import org.jetbrains.annotations.NotNull;
+
+import java.util.function.Function;
+
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
+@SuppressWarnings("Convert2MethodRef")
 public class Main {
     public sealed interface Term {
         default @NoInherit Term inst() {
@@ -25,8 +30,10 @@ public class Main {
 
     public record NormalTerm(Term sub0) implements Term {}
 
-    public static void acceptClosedTerm(@Closed Term term) {}
+    public static @Closed Term acceptClosedTerm(@Closed Term term) { return term; }
     public static void acceptClosedTerms(@Closed Term... terms) {}
+    public static void closureAcceptClosedTerm(@NotNull Function<@Closed Term, Term> f) {}
+    public static void closureAcceptBoundTerm(@NotNull Function<@Bound Term, Term> f) {}
 
     public static void acceptBoundTerm(@Bound Term term) {}
 
@@ -87,6 +94,16 @@ public class Main {
         // `inst` is marked with `NoInherit`, which silences the inspection on such method calls
         // in this case, the user should check the dblity
         closed = sub.inst();
+
+        closureAcceptClosedTerm(t -> {
+            // ok
+            return acceptClosedTerm(t);
+        });
+
+        closureAcceptBoundTerm(t -> {
+            // warn
+            return acceptClosedTerm(t);
+        });
     }
 
     public @Closed Term returnClosed() {
@@ -124,6 +141,13 @@ public class Main {
             }
             case Unit unit -> {}
         }
+
+        Term ret = switch (term) {
+            case AnnotatedTerm annotatedTerm -> {
+                yield acceptClosedTerm(annotatedTerm);
+            }
+            default -> null;
+        };
     }
 
     class WithFields {
