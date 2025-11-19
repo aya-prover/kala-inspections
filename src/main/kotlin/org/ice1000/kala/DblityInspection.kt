@@ -120,7 +120,9 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
 
         args.forEachIndexed { idx, arg ->
           if (param == null || !param.isVarArgs) {
-            param = params[idx]
+            // don't .unwrap() !
+            // skip inspect remaining arguments
+            param = params.getOrNull(idx) ?: return
           }
 
           var type = param.type
@@ -135,7 +137,6 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
           }
         }
       }
-
     }
 
     override fun visitAssignmentExpression(expression: PsiAssignmentExpression) {
