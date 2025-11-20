@@ -229,6 +229,17 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       doVisitSwitch(expression)
     }
 
+    override fun visitWhileStatement(statement: PsiWhileStatement) {
+      statement.condition?.accept(this)
+      statement.body?.accept(this)
+    }
+
+    override fun visitTryStatement(statement: PsiTryStatement) {
+      statement.tryBlock?.accept(this)
+      statement.catchBlocks.forEach { it.accept(this) }
+      statement.finallyBlock?.accept(this)
+    }
+
     private fun doVisitSwitch(sw: PsiSwitchBlock) {
       val expression = sw.expression
       expression?.accept(this)
@@ -392,13 +403,12 @@ class DblityInspection : AbstractBaseJavaLocalInspectionTool() {
       } else if (cmp > 0) {
         // assignable with implicit cast
         // TODO: I want to make some highlight, but how?
-        // sorry holder
-        // FIXME: this seems invisible for some reason, this path is reachable
-        holder.registerProblem(
-          actual,
-          KalaBundle.message("kala.aya.dblity.smart.cast", expectedKind.toAnnotationName()),
-          ProblemHighlightType.INFORMATION
-        )
+        //  INFORMATION is invisible
+        // holder.registerProblem(
+        //   actual,
+        //   KalaBundle.message("kala.aya.dblity.smart.cast", expectedKind.toAnnotationName()),
+        //   ProblemHighlightType.INFORMATION
+        // )
       }
     }
 
